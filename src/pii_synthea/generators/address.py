@@ -343,7 +343,7 @@ def generate_address(
     addr_body = f"{city}{district}{road}{detail_str}"
 
     if include_postal_code:
-        pcode = generate_postal_code(city=city, district=district, format_type=r.choice(["3", "3+3"]), rng=r)
+        pcode = generate_postal_code(city=city, district=district, format_type=r.choice(["3", "3+3"]), rng=rng)
         full_addr = f"{pcode} {addr_body}"
     else:
         full_addr = addr_body

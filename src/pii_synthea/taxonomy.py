@@ -365,6 +365,10 @@ class TaxonomyMapper:
         return list(CANONICAL_TAXONOMY.values())
 
     @staticmethod
+    def all_canonical_ids() -> List[str]:
+        return list(CANONICAL_TAXONOMY.keys())
+
+    @staticmethod
     def get_gliner2_labels(include_extensions: bool = True) -> List[str]:
         """Returns the list of labels used for GLiNER2 prompts."""
         labels = []

@@ -165,8 +165,8 @@ def generate_phone_number(
 
     if phone_type == "mobile":
         style = r.choice(["dashed", "compact", "spaced", "intl_dashed", "intl_compact"])
-        return generate_mobile_number(format_style=style, rng=r)
+        return generate_mobile_number(format_style=style, rng=rng)
     else:
         style = r.choice(["dashed", "parentheses", "compact"])
         ext = r.random() < 0.2
-        return generate_landline_number(include_extension=ext, format_style=style, rng=r)
+        return generate_landline_number(include_extension=ext, format_style=style, rng=rng)

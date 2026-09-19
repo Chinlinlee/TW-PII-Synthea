@@ -173,7 +173,7 @@ def generate_drivers_license_number(
     """
     r = rng if rng is not None else random
     if style == "national_id":
-        return generate_national_id(rng=r)
+        return generate_national_id(rng=rng)
     else:
         prefix = r.choice(["北市字第", "高市字第", "新北字第", "中市字第", "南市字第"])
         num = f"{r.randint(100000, 999999)}號"
