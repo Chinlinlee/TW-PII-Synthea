@@ -8,7 +8,8 @@ import json
 import os
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+import uuid
+from dataclasses import dataclass, field
 from typing import Optional, Protocol, Sequence
 
 from pii_synthea.generators.replacement import Span
@@ -27,6 +28,8 @@ class OpenAICompatibleLLMClient:
     api_key: Optional[str] = None
     model: str = "gpt-4o-mini"
     timeout_sec: float = 120.0
+    user_agent: str = "pii-synthea/1.0"
+    opencode_session_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     @classmethod
     def from_env(cls) -> "OpenAICompatibleLLMClient":
@@ -34,7 +37,15 @@ class OpenAICompatibleLLMClient:
         base = os.environ.get("PII_SYNTH_LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
         key = os.environ.get("PII_SYNTH_LLM_API_KEY") or os.environ.get("OPENAI_API_KEY")
         model = os.environ.get("PII_SYNTH_LLM_MODEL", "gpt-4o-mini")
-        return cls(base_url=base, api_key=key, model=model)
+        user_agent = os.environ.get("PII_SYNTH_LLM_USER_AGENT", "pii-synthea/1.0")
+        session = os.environ.get("PII_SYNTH_LLM_OPENCODE_SESSION") or str(uuid.uuid4())
+        return cls(
+            base_url=base,
+            api_key=key,
+            model=model,
+            user_agent=user_agent,
+            opencode_session_id=session,
+        )
 
     @property
     def is_configured(self) -> bool:
@@ -57,13 +68,18 @@ class OpenAICompatibleLLMClient:
             "temperature": 0.9,
         }
         body = json.dumps(payload).encode("utf-8")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+            "User-Agent": self.user_agent,
+        }
+        if "opencode.ai" in self.base_url:
+            headers["x-opencode-session"] = self.opencode_session_id
+
         req = urllib.request.Request(
             url,
             data=body,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}",
-            },
+            headers=headers,
             method="POST",
         )
         try:
