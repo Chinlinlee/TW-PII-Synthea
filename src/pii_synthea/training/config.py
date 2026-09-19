@@ -55,6 +55,8 @@ class GLiNER2TrainingConfig:
     fp16: bool = True
     bf16: bool = False
     group_by_length: bool = True
+    max_len: Optional[int] = None
+    gradient_checkpointing: bool = False
     num_workers: int = 4
     pin_memory: bool = True
     seed: int = 42
@@ -140,6 +142,8 @@ class GLiNER2TrainingConfig:
             "pin_memory": self.pin_memory,
             "seed": self.seed,
             "group_by_length": self.group_by_length,
+            "max_len": self.max_len,
+            "gradient_checkpointing": self.gradient_checkpointing,
             "use_lora": self.use_lora,
             "lora_r": self.lora_r,
             "lora_alpha": self.lora_alpha,

@@ -10,7 +10,6 @@ Prerequisites:
 
 import argparse
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -91,7 +90,48 @@ def parse_args():
         default=None,
         help="Output directory for model weights/checkpoints.",
     )
+    parser.add_argument(
+        "--max-len",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Cap tokenized sequence length (truncates long samples). Recommended 512 on 8GB GPUs.",
+    )
+    parser.add_argument(
+        "--eval-batch-size",
+        type=int,
+        default=None,
+        help="Evaluation batch size (default: same as --batch-size).",
+    )
+    parser.add_argument(
+        "--gradient-checkpointing",
+        action="store_true",
+        help="Trade compute for lower VRAM (encoder activation checkpointing).",
+    )
+    parser.add_argument(
+        "--low-vram",
+        action="store_true",
+        help="Preset for ~8GB GPUs: max_len=512, batch_size=1, grad_accum=1, gradient checkpointing.",
+    )
     return parser.parse_args()
+
+
+def apply_cli_presets(args: argparse.Namespace) -> None:
+    if args.low_vram:
+        if args.max_len is None:
+            args.max_len = 512
+        args.batch_size = 1
+        args.gradient_accumulation_steps = 1
+        args.gradient_checkpointing = True
+    if args.eval_batch_size is None:
+        args.eval_batch_size = args.batch_size
+
+
+def count_jsonl_lines(path: Path) -> int:
+    if not path.is_file():
+        return 0
+    with open(path, "r", encoding="utf-8") as f:
+        return sum(1 for line in f if line.strip())
 
 
 def prepare_sample_dataset(source_path: Path, max_samples: int, prefix: str = "train") -> Path:
@@ -113,6 +153,7 @@ def prepare_sample_dataset(source_path: Path, max_samples: int, prefix: str = "t
 
 def main():
     args = parse_args()
+    apply_cli_presets(args)
 
     try:
         import torch
@@ -169,6 +210,10 @@ def main():
 
     logger.info(f"Base model    : fastino/gliner2-privacy-filter-PII-multi")
     logger.info(f"Batch size    : {args.batch_size} (acc steps: {args.gradient_accumulation_steps}, effective: {args.batch_size * args.gradient_accumulation_steps})")
+    logger.info(f"Eval batch    : {args.eval_batch_size}")
+    logger.info(f"Max seq len   : {args.max_len if args.max_len is not None else 'none (full length)'}")
+    logger.info(f"Grad checkpoint: {args.gradient_checkpointing}")
+    logger.info(f"Low-VRAM preset: {args.low_vram}")
     logger.info(f"FP16 enabled  : {args.fp16}")
     logger.info(f"Output dir    : {output_dir.resolve()}")
     logger.info("=" * 70)
@@ -214,8 +259,10 @@ def main():
         "num_epochs": num_epochs,
         "max_steps": -1,
         "batch_size": args.batch_size,
-        "eval_batch_size": args.batch_size,
+        "eval_batch_size": args.eval_batch_size,
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
+        "max_len": args.max_len,
+        "gradient_checkpointing": args.gradient_checkpointing,
         "encoder_lr": 1e-05,
         "task_lr": 0.0005,
         "weight_decay": 0.01,
@@ -262,6 +309,10 @@ def main():
     logger.info("Initializing ExtractorTrainer...")
     trainer = ExtractorTrainer(model=model, config=trainer_config)
 
+    failed_batches_path = output_dir / "failed_batches.jsonl"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    oom_events_before = count_jsonl_lines(failed_batches_path)
+
     logger.info("Starting fine-tuning...")
     results = trainer.train(
         train_data=train_dataset,
@@ -275,12 +326,21 @@ def main():
             logger.info(f"  {k}: {v}")
     logger.info(f"Saved fine-tuned artifacts to: {output_dir.resolve()}")
 
+    oom_events_this_run = count_jsonl_lines(failed_batches_path) - oom_events_before
     if torch.cuda.is_available():
         peak_allocated_mb = torch.cuda.max_memory_allocated(0) / (1024 ** 2)
         peak_reserved_mb = torch.cuda.max_memory_reserved(0) / (1024 ** 2)
         logger.info(f"Peak VRAM Allocated : {peak_allocated_mb:.1f} MB")
         logger.info(f"Peak VRAM Reserved  : {peak_reserved_mb:.1f} MB")
-        logger.info(f"VRAM Safety Check   : OK (No OOM encountered on {torch.cuda.get_device_name(0)})")
+    logger.info(f"OOM skipped batches : {oom_events_this_run} (see {failed_batches_path.resolve()})")
+    if oom_events_this_run == 0:
+        gpu_label = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"
+        logger.info(f"VRAM Safety Check   : OK (no OOM-skipped batches on {gpu_label})")
+    else:
+        logger.warning(
+            "VRAM Safety Check   : DEGRADED — reduce --max-len, enable --gradient-checkpointing, "
+            "or use --low-vram"
+        )
     logger.info("=" * 70)
 
     # 6. Verification Inference Test

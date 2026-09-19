@@ -7,7 +7,9 @@ providing span-level Exact Match, Boundary-Relaxed IoU, OOD diagnosis, and Hard 
 from __future__ import annotations
 
 import datetime
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 from pii_synthea.evaluation.benchmark_dataset import (
@@ -55,6 +57,32 @@ class BasePredictor:
         return [self.predict(t, labels) for t in texts]
 
 
+def _resolve_peft_adapter_dir(model_name_or_path: str) -> Optional[Path]:
+    """If path points at a PEFT LoRA adapter export, return its directory."""
+    path = Path(model_name_or_path).expanduser()
+    if not path.exists():
+        return None
+    if path.is_file():
+        path = path.parent
+    adapter_cfg = path / "adapter_config.json"
+    if adapter_cfg.is_file():
+        return path.resolve()
+    for sub in ("final", "best"):
+        candidate = path / sub
+        if (candidate / "adapter_config.json").is_file():
+            return candidate.resolve()
+    return None
+
+
+def _peft_base_model_id(adapter_dir: Path) -> str:
+    with adapter_dir.joinpath("adapter_config.json").open(encoding="utf-8") as f:
+        cfg = json.load(f)
+    base = cfg.get("base_model_name_or_path")
+    if not base:
+        raise ValueError(f"adapter_config.json in {adapter_dir} is missing base_model_name_or_path")
+    return str(base)
+
+
 class GLiNER2Predictor(BasePredictor):
     """
     Live GLiNER2 model prediction wrapper.
@@ -80,7 +108,13 @@ class GLiNER2Predictor(BasePredictor):
                 "To run in offline simulation mode without GPU/torch, use SimulationPredictor."
             ) from e
 
-        self.model = AutoExtractor.from_pretrained(self.model_name_or_path)
+        adapter_dir = _resolve_peft_adapter_dir(self.model_name_or_path)
+        if adapter_dir is not None:
+            base_model = _peft_base_model_id(adapter_dir)
+            self.model = AutoExtractor.from_pretrained(base_model)
+            self.model.load_adapter(str(adapter_dir))
+        else:
+            self.model = AutoExtractor.from_pretrained(self.model_name_or_path)
         if self.use_char_splitter:
             self.model.set_word_splitter(CharLevelSplitter())
 
@@ -88,18 +122,33 @@ class GLiNER2Predictor(BasePredictor):
         if labels is None:
             labels = TaxonomyMapper.get_gliner2_labels()
 
-        predictions = self.model.extract_entities(text, labels, threshold=self.score_threshold)
+        raw = self.model.extract_entities(
+            text,
+            labels,
+            threshold=self.score_threshold,
+            include_spans=True,
+            include_confidence=True,
+        )
         spans: List[Span] = []
-        for p in predictions:
-            spans.append(
-                Span(
-                    start=int(p["start"]),
-                    end=int(p["end"]),
-                    label=str(p["label"]),
-                    text=str(p.get("text", text[int(p["start"]):int(p["end"])])),
-                    score=float(p.get("score", 1.0)),
-                )
-            )
+        entities = raw.get("entities", raw) if isinstance(raw, dict) else {}
+        if isinstance(entities, dict):
+            for label, mentions in entities.items():
+                if not isinstance(mentions, list):
+                    continue
+                for mention in mentions:
+                    if not isinstance(mention, dict):
+                        continue
+                    start = int(mention["start"])
+                    end = int(mention["end"])
+                    spans.append(
+                        Span(
+                            start=start,
+                            end=end,
+                            label=str(label),
+                            text=str(mention.get("text", text[start:end])),
+                            score=float(mention.get("confidence", mention.get("score", 1.0))),
+                        )
+                    )
         return spans
 
 
