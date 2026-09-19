@@ -32,4 +32,20 @@ The programmatic entity generation subsystem under `src/pii_synthea/generators/`
 ### Offset Preservation Engine (位移保全與 Span 校驗引擎)
 The character-level offset management architecture implemented in `TemplateEngine`, `SpanReplacer`, and `SynthesisResult`. It guarantees 100% boundary fidelity by calculating exact `[start, end]` boundaries across variable-length substitutions, enforcing non-overlapping constraints, and asserting `text[start:end] == span.text` prior to emitting GLiNER2 training examples.
 
+### Domain Scenarios (在地領域場景矩陣)
+The 6 canonical industry and situational domains implemented under `src/pii_synthea/scenarios/domains.py`: Healthcare (醫療院所與公衛), Banking & Finance (金融銀行與支付), Telecom (電信通訊與資費), E-commerce & Logistics (網購電商與物流配送), Real Estate (租屋不動產與物業), and Legal Consultation (法律諮詢與民事調解).
+
+### Text Length Distribution (文本篇幅分佈)
+The three length distribution tiers modeled in `TextLengthCategory`:
+- `short` (15–120 chars): Customer service single turns, SMS notifications, transaction OTP/alerts, delivery notifications.
+- `mid` (200–1000 chars): LINE chat transcripts, complaint emails, registration forms, inquiry dialogues.
+- `long` (1500–5000 chars): Comprehensive hospital discharge summaries, residential lease agreements, commercial mortgage contracts, and certified legal arbitration transcripts.
+
+### TagToSpanParser (標籤位移解析引擎)
+The XML extraction subsystem implemented in `src/pii_synthea/scenarios/tag_parser.py`. It strips enclosing (`<label>text</label>`), indexed (`<label:1>`), self-closing, and mustache tags, computes exact zero-indexed character offsets in clean text, asserts boundary integrity, and optionally normalizes hallucinated entities into algorithmically valid Taiwan PII.
+
+### ScenarioSynthesizer (情境合成編排器)
+The unified pipeline controller implemented in `src/pii_synthea/scenarios/generator.py`. It connects `SeedTemplateLibrary`, `PromptBuilder`, `TagToSpanParser`, and `TemplateEngine` to generate single or batch synthetic datasets with distribution control, exporting directly to GLiNER2 JSONL or `tw-PII-bench` format.
+
+
 

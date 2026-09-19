@@ -12,8 +12,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from pii_synthea.generators import TaiwanPIIGenerator, TemplateEngine
-from pii_synthea.taxonomy import TaxonomyMapper, LabelGroup
-
+from pii_synthea.scenarios import (
+    DomainCategory,
+    PromptBuilder,
+    ScenarioDefinition,
+    ScenarioRegistry,
+    ScenarioSynthesizer,
+    SeedTemplateLibrary,
+    TagToSpanParser,
+    TextLengthCategory,
+)
+from pii_synthea.taxonomy import LabelGroup, TaxonomyMapper
 
 
 def cmd_list_taxonomy(args):
@@ -76,6 +85,91 @@ def cmd_render_template(args):
     print("\nSpan verification: 100% OK (assert text[start:end] == span.text passed)")
 
 
+def cmd_list_scenarios(args):
+    """Lists available authentic Taiwan domain scenarios across all domains and length scales."""
+    scenarios = ScenarioRegistry.list_all()
+    print(f"\n==================== Taiwan Context Scenarios ({len(scenarios)} Defined) ====================")
+    print(f"{'Scenario ID':<32} | {'Domain':<22} | {'Scale':<8} | {'Scenario Name (ZH)'}")
+    print("-" * 95)
+    for s in scenarios:
+        print(f"{s.scenario_id:<32} | {s.domain.display_name_zh:<22} | {s.length_category.value.upper():<8} | {s.name_zh}")
+    print("=" * 95)
+
+
+def cmd_build_prompt(args):
+    """Builds LLM generation prompts for a specific scenario."""
+    synthesizer = ScenarioSynthesizer()
+    domain_enum = DomainCategory(args.domain) if args.domain else None
+    length_enum = TextLengthCategory(args.length) if args.length else None
+
+    prompts = synthesizer.build_llm_prompt(
+        scenario_id=args.scenario_id,
+        domain=domain_enum,
+        length_cat=length_enum,
+        custom_instructions=args.instructions,
+        include_few_shot=not args.no_few_shot,
+        template_only=args.template_only,
+    )
+
+    print("\n==================== [SYSTEM PROMPT] ====================")
+    print(prompts["system"])
+    print("\n==================== [USER PROMPT] ====================")
+    print(prompts["user"])
+    print("=" * 60)
+
+
+def cmd_generate_scenario(args):
+    """Generates an annotated text from seed scenario templates with authentic valid PII."""
+    synthesizer = ScenarioSynthesizer(seed=args.seed)
+    domain_enum = DomainCategory(args.domain) if args.domain else None
+    length_enum = TextLengthCategory(args.length) if args.length else None
+
+    result = synthesizer.synthesize_from_seed(
+        template_id=args.template_id,
+        domain=domain_enum,
+        length_cat=length_enum,
+        seed=args.seed,
+    )
+
+    print("\n--- Synthesized Scenario Text ---")
+    print(result.text)
+    print(f"\n--- Extracted & Validated Spans ({len(result.spans)} entities, char length {len(result.text)}) ---")
+    for s in result.spans:
+        print(f"[{s.start:4d}:{s.end:4d}] ({s.label:<22}) {s.text}")
+
+    print("\nIntegrity check: 100% verified (assert text[start:end] == span.text passed)")
+
+    if args.output:
+        p = Path(args.output)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(json.dumps(result.to_gliner2_format(), ensure_ascii=False, indent=2))
+        print(f"Exported GLiNER2 training item to {p}")
+
+
+def cmd_parse_tags(args):
+    """Parses XML-tagged text and extracts exact character spans."""
+    parser = TagToSpanParser(seed=args.seed)
+    text_content = args.text
+    if not text_content and args.file:
+        with open(args.file, "r", encoding="utf-8") as f:
+            text_content = f.read()
+
+    if not text_content:
+        text_content = (
+            "病患 <person>林佳玲</person> 女士，身分證字號為 <national_id_number>A223456781</national_id_number>，"
+            "於 <address>新北市新莊區中正路100號</address> 診所門診掛號，聯絡電話：<phone_number>0912-345-678</phone_number>。"
+        )
+        print("Using default tagged sample...")
+
+    result = parser.parse(text_content, normalize_invalid=args.normalize)
+    print("\n--- Clean Text (Tags Stripped) ---")
+    print(result.text)
+    print(f"\n--- Extracted Spans ({len(result.spans)} detected) ---")
+    for s in result.spans:
+        print(f"[{s.start:3d}:{s.end:3d}] ({s.label:<20}) {s.text}")
+    print("\nSpan verification: 100% OK")
+
+
 def main():
     parser = argparse.ArgumentParser(description="PII-Synthea: Taiwan PII Synthetic Engine")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -102,9 +196,39 @@ def main():
     p_render.add_argument("-s", "--seed", type=int, default=None, help="Random seed for reproducibility")
     p_render.set_defaults(func=cmd_render_template)
 
+    # Command: list-scenarios
+    p_scenarios = subparsers.add_parser("list-scenarios", help="List all predefined Taiwan contextual scenarios")
+    p_scenarios.set_defaults(func=cmd_list_scenarios)
+
+    # Command: build-prompt
+    p_prompt = subparsers.add_parser("build-prompt", help="Build LLM prompt for a scenario")
+    p_prompt.add_argument("-i", "--scenario-id", help="Scenario ID (e.g. health_line_consultation)")
+    p_prompt.add_argument("-d", "--domain", choices=[d.value for d in DomainCategory], help="Domain category")
+    p_prompt.add_argument("-l", "--length", choices=[l.value for l in TextLengthCategory], help="Text length category")
+    p_prompt.add_argument("--instructions", help="Custom supplementary instructions")
+    p_prompt.add_argument("--no-few-shot", action="store_true", help="Exclude few-shot examples")
+    p_prompt.add_argument("--template-only", action="store_true", help="Instruct LLM to generate empty template tags")
+    p_prompt.set_defaults(func=cmd_build_prompt)
+
+    # Command: generate-scenario
+    p_gen_sc = subparsers.add_parser("generate-scenario", help="Generate scenario text with valid Taiwan PII")
+    p_gen_sc.add_argument("-t", "--template-id", help="Specific seed template ID")
+    p_gen_sc.add_argument("-d", "--domain", choices=[d.value for d in DomainCategory], help="Domain filter")
+    p_gen_sc.add_argument("-l", "--length", choices=[l.value for l in TextLengthCategory], help="Length filter")
+    p_gen_sc.add_argument("-s", "--seed", type=int, default=None, help="Random seed")
+    p_gen_sc.add_argument("-o", "--output", help="Save GLiNER2 training JSON item to file")
+    p_gen_sc.set_defaults(func=cmd_generate_scenario)
+
+    # Command: parse-tags
+    p_parse = subparsers.add_parser("parse-tags", help="Parse XML-tagged text into clean text + exact spans")
+    p_parse.add_argument("-t", "--text", help="Tagged text string")
+    p_parse.add_argument("-f", "--file", help="Path to text file")
+    p_parse.add_argument("-n", "--normalize", action="store_true", help="Normalize invalid PII algorithmically")
+    p_parse.add_argument("-s", "--seed", type=int, default=None, help="Random seed for normalization")
+    p_parse.set_defaults(func=cmd_parse_tags)
+
     args = parser.parse_args()
     if not args.command:
-        # Default behavior: display taxonomy list
         cmd_list_taxonomy(args)
     else:
         args.func(args)
