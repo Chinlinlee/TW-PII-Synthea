@@ -1,182 +1,185 @@
 {
-  "model_name": "fastino/gliner2-privacy-filter-PII-multi",
+  "model_name": "a5566qq123/gliner2-tw-pii",
+  "model_hub_id": "a5566qq123/gliner2-tw-pii",
+  "model_revision": "v0.1.0-mid",
+  "model_local_path": "./models/gliner2_tw_pii/best",
   "evaluation_date": "2026-09-19",
   "iou_threshold": 0.5,
   "score_threshold": 0.5,
   "splits": {
-    "short": {
-      "split": "short",
-      "total_items": 37,
+    "mid": {
+      "split": "mid",
+      "total_items": 300,
       "in_schema": {
         "categories": {
           "private_person": {
             "name": "private_person",
-            "total_gold": 2,
+            "total_gold": 516,
             "strict": {
-              "tp": 2,
-              "fp": 0,
-              "fn": 0,
-              "precision": 1.0,
-              "recall": 1.0,
-              "f1": 1.0
+              "tp": 482,
+              "fp": 166,
+              "fn": 34,
+              "precision": 0.7438,
+              "recall": 0.9341,
+              "f1": 0.8282
             },
             "relaxed": {
-              "tp": 2,
-              "fp": 0,
-              "fn": 0,
-              "precision": 1.0,
-              "recall": 1.0,
-              "f1": 1.0
+              "tp": 497,
+              "fp": 151,
+              "fn": 19,
+              "precision": 0.767,
+              "recall": 0.9632,
+              "f1": 0.854
             }
           },
           "private_phone": {
             "name": "private_phone",
-            "total_gold": 2,
+            "total_gold": 180,
             "strict": {
-              "tp": 1,
-              "fp": 0,
-              "fn": 1,
-              "precision": 1.0,
-              "recall": 0.5,
-              "f1": 0.6667
+              "tp": 175,
+              "fp": 63,
+              "fn": 5,
+              "precision": 0.7353,
+              "recall": 0.9722,
+              "f1": 0.8373
             },
             "relaxed": {
-              "tp": 1,
-              "fp": 0,
-              "fn": 1,
-              "precision": 1.0,
-              "recall": 0.5,
-              "f1": 0.6667
+              "tp": 178,
+              "fp": 60,
+              "fn": 2,
+              "precision": 0.7479,
+              "recall": 0.9889,
+              "f1": 0.8517
             }
           },
           "private_email": {
             "name": "private_email",
-            "total_gold": 2,
+            "total_gold": 120,
             "strict": {
-              "tp": 0,
-              "fp": 2,
-              "fn": 2,
-              "precision": 0.0,
-              "recall": 0.0,
-              "f1": 0.0
+              "tp": 115,
+              "fp": 49,
+              "fn": 5,
+              "precision": 0.7012,
+              "recall": 0.9583,
+              "f1": 0.8099
             },
             "relaxed": {
-              "tp": 2,
-              "fp": 0,
-              "fn": 0,
-              "precision": 1.0,
-              "recall": 1.0,
-              "f1": 1.0
+              "tp": 119,
+              "fp": 45,
+              "fn": 1,
+              "precision": 0.7256,
+              "recall": 0.9917,
+              "f1": 0.838
             }
           },
           "private_address": {
             "name": "private_address",
-            "total_gold": 2,
+            "total_gold": 115,
             "strict": {
               "tp": 0,
-              "fp": 2,
-              "fn": 2,
+              "fp": 23,
+              "fn": 115,
               "precision": 0.0,
               "recall": 0.0,
               "f1": 0.0
             },
             "relaxed": {
-              "tp": 0,
-              "fp": 2,
-              "fn": 2,
-              "precision": 0.0,
-              "recall": 0.0,
-              "f1": 0.0
+              "tp": 9,
+              "fp": 14,
+              "fn": 106,
+              "precision": 0.3913,
+              "recall": 0.0783,
+              "f1": 0.1304
             }
           },
           "private_date": {
             "name": "private_date",
-            "total_gold": 2,
+            "total_gold": 158,
             "strict": {
-              "tp": 0,
-              "fp": 0,
-              "fn": 2,
-              "precision": 0.0,
-              "recall": 0.0,
-              "f1": 0.0
+              "tp": 33,
+              "fp": 37,
+              "fn": 125,
+              "precision": 0.4714,
+              "recall": 0.2089,
+              "f1": 0.2895
             },
             "relaxed": {
-              "tp": 0,
-              "fp": 0,
-              "fn": 2,
-              "precision": 0.0,
-              "recall": 0.0,
-              "f1": 0.0
+              "tp": 69,
+              "fp": 1,
+              "fn": 89,
+              "precision": 0.9857,
+              "recall": 0.4367,
+              "f1": 0.6053
             }
           },
           "private_url": {
             "name": "private_url",
-            "total_gold": 3,
+            "total_gold": 166,
             "strict": {
               "tp": 0,
-              "fp": 2,
-              "fn": 3,
+              "fp": 0,
+              "fn": 166,
               "precision": 0.0,
               "recall": 0.0,
               "f1": 0.0
             },
             "relaxed": {
-              "tp": 2,
+              "tp": 0,
               "fp": 0,
-              "fn": 1,
-              "precision": 1.0,
-              "recall": 0.6667,
-              "f1": 0.8
+              "fn": 166,
+              "precision": 0.0,
+              "recall": 0.0,
+              "f1": 0.0
             }
           },
           "account_number": {
             "name": "account_number",
-            "total_gold": 10,
+            "total_gold": 714,
             "strict": {
-              "tp": 1,
-              "fp": 7,
-              "fn": 9,
-              "precision": 0.125,
-              "recall": 0.1,
-              "f1": 0.1111
+              "tp": 279,
+              "fp": 118,
+              "fn": 435,
+              "precision": 0.7028,
+              "recall": 0.3908,
+              "f1": 0.5023
             },
             "relaxed": {
-              "tp": 8,
-              "fp": 0,
-              "fn": 2,
-              "precision": 1.0,
-              "recall": 0.8,
-              "f1": 0.8889
+              "tp": 372,
+              "fp": 25,
+              "fn": 342,
+              "precision": 0.937,
+              "recall": 0.521,
+              "f1": 0.6697
             }
           },
           "secret": {
             "name": "secret",
-            "total_gold": 2,
+            "total_gold": 83,
             "strict": {
-              "tp": 0,
-              "fp": 2,
-              "fn": 2,
-              "precision": 0.0,
-              "recall": 0.0,
-              "f1": 0.0
+              "tp": 74,
+              "fp": 410,
+              "fn": 9,
+              "precision": 0.1529,
+              "recall": 0.8916,
+              "f1": 0.261
             },
             "relaxed": {
-              "tp": 2,
-              "fp": 0,
-              "fn": 0,
-              "precision": 1.0,
-              "recall": 1.0,
-              "f1": 1.0
+              "tp": 81,
+              "fp": 403,
+              "fn": 2,
+              "precision": 0.1674,
+              "recall": 0.9759,
+              "f1": 0.2857
             }
           }
         },
         "strict_micro": {
-          "tp": 4,
-          "fp": 15,
-          "fn": 21,
-          "precision": 0.2105,
-          "recall": 0.16,
-          "f1": 0.1818
+          "tp": 1158,
+          "fp": 866,
+          "fn": 894,
+          "precision": 0.5721,
+          "recall": 0.5643,
+          "f1": 0.5682
         },
         "strict_macro": {
           "tp": 0,
@@ -184,15 +187,15 @@
           "fn": 0,
           "precision": 0.0,
           "recall": 0.0,
-          "f1": 0.2222
+          "f1": 0.441
         },
         "relaxed_micro": {
-          "tp": 17,
-          "fp": 2,
-          "fn": 8,
-          "precision": 0.8947,
-          "recall": 0.68,
-          "f1": 0.7727
+          "tp": 1325,
+          "fp": 699,
+          "fn": 727,
+          "precision": 0.6546,
+          "recall": 0.6457,
+          "f1": 0.6501
         },
         "relaxed_macro": {
           "tp": 0,
@@ -200,7 +203,7 @@
           "fn": 0,
           "precision": 0.0,
           "recall": 0.0,
-          "f1": 0.6694
+          "f1": 0.5293
         }
       },
       "out_of_schema": {
@@ -208,58 +211,58 @@
           "tw_national_id": {
             "label": "tw_national_id",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
-            "wrong_label": 0,
+            "total": 89,
+            "correct": 88,
+            "wrong_label": 1,
             "missed": 0,
             "detection_rate": 1.0,
-            "generalization_rate": 1.0
+            "generalization_rate": 0.9888
           },
           "tw_nhi_card": {
             "label": "tw_nhi_card",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
-            "wrong_label": 0,
+            "total": 77,
+            "correct": 75,
+            "wrong_label": 2,
             "missed": 0,
             "detection_rate": 1.0,
-            "generalization_rate": 1.0
+            "generalization_rate": 0.974
           },
           "tw_company_id": {
             "label": "tw_company_id",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
-            "wrong_label": 0,
+            "total": 78,
+            "correct": 68,
+            "wrong_label": 10,
             "missed": 0,
             "detection_rate": 1.0,
-            "generalization_rate": 1.0
+            "generalization_rate": 0.8718
           },
           "tw_license_plate": {
             "label": "tw_license_plate",
             "expected_fallback": null,
-            "total": 1,
-            "correct": 0,
-            "wrong_label": 1,
-            "missed": 0,
-            "detection_rate": 1.0,
-            "generalization_rate": 0.0
-          },
-          "tw_passport": {
-            "label": "tw_passport",
-            "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
+            "total": 102,
+            "correct": 102,
             "wrong_label": 0,
             "missed": 0,
             "detection_rate": 1.0,
             "generalization_rate": 1.0
           },
+          "tw_passport": {
+            "label": "tw_passport",
+            "expected_fallback": "account_number",
+            "total": 59,
+            "correct": 58,
+            "wrong_label": 1,
+            "missed": 0,
+            "detection_rate": 1.0,
+            "generalization_rate": 0.9831
+          },
           "tw_driver_license": {
             "label": "tw_driver_license",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
+            "total": 66,
+            "correct": 66,
             "wrong_label": 0,
             "missed": 0,
             "detection_rate": 1.0,
@@ -268,38 +271,38 @@
           "tw_line_id": {
             "label": "tw_line_id",
             "expected_fallback": "private_url",
-            "total": 1,
-            "correct": 1,
-            "wrong_label": 0,
+            "total": 93,
+            "correct": 92,
+            "wrong_label": 1,
             "missed": 0,
             "detection_rate": 1.0,
-            "generalization_rate": 1.0
+            "generalization_rate": 0.9892
           },
           "tw_ptt_id": {
             "label": "tw_ptt_id",
             "expected_fallback": null,
-            "total": 1,
-            "correct": 0,
-            "wrong_label": 1,
-            "missed": 0,
-            "detection_rate": 1.0,
-            "generalization_rate": 0.0
-          },
-          "tw_household_no": {
-            "label": "tw_household_no",
-            "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
+            "total": 68,
+            "correct": 68,
             "wrong_label": 0,
             "missed": 0,
             "detection_rate": 1.0,
             "generalization_rate": 1.0
           },
+          "tw_household_no": {
+            "label": "tw_household_no",
+            "expected_fallback": "account_number",
+            "total": 70,
+            "correct": 66,
+            "wrong_label": 4,
+            "missed": 0,
+            "detection_rate": 1.0,
+            "generalization_rate": 0.9429
+          },
           "tw_medical_license": {
             "label": "tw_medical_license",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
+            "total": 82,
+            "correct": 82,
             "wrong_label": 0,
             "missed": 0,
             "detection_rate": 1.0,
@@ -308,230 +311,230 @@
           "tw_military_id": {
             "label": "tw_military_id",
             "expected_fallback": "account_number",
-            "total": 1,
-            "correct": 1,
+            "total": 75,
+            "correct": 75,
             "wrong_label": 0,
             "missed": 0,
             "detection_rate": 1.0,
             "generalization_rate": 1.0
           }
         },
-        "total_spans": 11,
+        "total_spans": 859,
         "overall_detection_rate": 1.0,
-        "overall_generalization_rate": 0.8182
+        "overall_generalization_rate": 0.9779
       },
       "hard_negatives": {
         "subtypes": {
           "neg_business_name": {
             "subtype": "neg_business_name",
-            "total_items": 2,
-            "fps": 1,
-            "fp_per_item": 0.5
+            "total_items": 0,
+            "fps": 0,
+            "fp_per_item": 0.0
           },
           "neg_public_figure": {
             "subtype": "neg_public_figure",
-            "total_items": 2,
-            "fps": 1,
-            "fp_per_item": 0.5
+            "total_items": 0,
+            "fps": 0,
+            "fp_per_item": 0.0
           },
           "neg_landmark_address": {
             "subtype": "neg_landmark_address",
-            "total_items": 2,
+            "total_items": 0,
             "fps": 0,
             "fp_per_item": 0.0
           },
           "neg_public_hotline": {
             "subtype": "neg_public_hotline",
-            "total_items": 2,
-            "fps": 2,
-            "fp_per_item": 1.0
+            "total_items": 0,
+            "fps": 0,
+            "fp_per_item": 0.0
           },
           "neg_institutional_email": {
             "subtype": "neg_institutional_email",
-            "total_items": 2,
-            "fps": 2,
-            "fp_per_item": 1.0
+            "total_items": 0,
+            "fps": 0,
+            "fp_per_item": 0.0
           }
         },
-        "total_items": 10,
-        "total_fps": 6,
-        "fp_per_item": 0.6
+        "total_items": 0,
+        "total_fps": 0,
+        "fp_per_item": 0.0
       }
     }
   },
   "overall": {
     "split": "overall",
-    "total_items": 37,
+    "total_items": 300,
     "in_schema": {
       "categories": {
         "private_person": {
           "name": "private_person",
-          "total_gold": 2,
+          "total_gold": 516,
           "strict": {
-            "tp": 2,
-            "fp": 0,
-            "fn": 0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0
+            "tp": 482,
+            "fp": 166,
+            "fn": 34,
+            "precision": 0.7438,
+            "recall": 0.9341,
+            "f1": 0.8282
           },
           "relaxed": {
-            "tp": 2,
-            "fp": 0,
-            "fn": 0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0
+            "tp": 497,
+            "fp": 151,
+            "fn": 19,
+            "precision": 0.767,
+            "recall": 0.9632,
+            "f1": 0.854
           }
         },
         "private_phone": {
           "name": "private_phone",
-          "total_gold": 2,
+          "total_gold": 180,
           "strict": {
-            "tp": 1,
-            "fp": 0,
-            "fn": 1,
-            "precision": 1.0,
-            "recall": 0.5,
-            "f1": 0.6667
+            "tp": 175,
+            "fp": 63,
+            "fn": 5,
+            "precision": 0.7353,
+            "recall": 0.9722,
+            "f1": 0.8373
           },
           "relaxed": {
-            "tp": 1,
-            "fp": 0,
-            "fn": 1,
-            "precision": 1.0,
-            "recall": 0.5,
-            "f1": 0.6667
+            "tp": 178,
+            "fp": 60,
+            "fn": 2,
+            "precision": 0.7479,
+            "recall": 0.9889,
+            "f1": 0.8517
           }
         },
         "private_email": {
           "name": "private_email",
-          "total_gold": 2,
+          "total_gold": 120,
           "strict": {
-            "tp": 0,
-            "fp": 2,
-            "fn": 2,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "tp": 115,
+            "fp": 49,
+            "fn": 5,
+            "precision": 0.7012,
+            "recall": 0.9583,
+            "f1": 0.8099
           },
           "relaxed": {
-            "tp": 2,
-            "fp": 0,
-            "fn": 0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0
+            "tp": 119,
+            "fp": 45,
+            "fn": 1,
+            "precision": 0.7256,
+            "recall": 0.9917,
+            "f1": 0.838
           }
         },
         "private_address": {
           "name": "private_address",
-          "total_gold": 2,
+          "total_gold": 115,
           "strict": {
             "tp": 0,
-            "fp": 2,
-            "fn": 2,
+            "fp": 23,
+            "fn": 115,
             "precision": 0.0,
             "recall": 0.0,
             "f1": 0.0
           },
           "relaxed": {
-            "tp": 0,
-            "fp": 2,
-            "fn": 2,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "tp": 9,
+            "fp": 14,
+            "fn": 106,
+            "precision": 0.3913,
+            "recall": 0.0783,
+            "f1": 0.1304
           }
         },
         "private_date": {
           "name": "private_date",
-          "total_gold": 2,
+          "total_gold": 158,
           "strict": {
-            "tp": 0,
-            "fp": 0,
-            "fn": 2,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "tp": 33,
+            "fp": 37,
+            "fn": 125,
+            "precision": 0.4714,
+            "recall": 0.2089,
+            "f1": 0.2895
           },
           "relaxed": {
-            "tp": 0,
-            "fp": 0,
-            "fn": 2,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "tp": 69,
+            "fp": 1,
+            "fn": 89,
+            "precision": 0.9857,
+            "recall": 0.4367,
+            "f1": 0.6053
           }
         },
         "private_url": {
           "name": "private_url",
-          "total_gold": 3,
+          "total_gold": 166,
           "strict": {
             "tp": 0,
-            "fp": 2,
-            "fn": 3,
+            "fp": 0,
+            "fn": 166,
             "precision": 0.0,
             "recall": 0.0,
             "f1": 0.0
           },
           "relaxed": {
-            "tp": 2,
+            "tp": 0,
             "fp": 0,
-            "fn": 1,
-            "precision": 1.0,
-            "recall": 0.6667,
-            "f1": 0.8
+            "fn": 166,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
           }
         },
         "account_number": {
           "name": "account_number",
-          "total_gold": 10,
+          "total_gold": 714,
           "strict": {
-            "tp": 1,
-            "fp": 7,
-            "fn": 9,
-            "precision": 0.125,
-            "recall": 0.1,
-            "f1": 0.1111
+            "tp": 279,
+            "fp": 118,
+            "fn": 435,
+            "precision": 0.7028,
+            "recall": 0.3908,
+            "f1": 0.5023
           },
           "relaxed": {
-            "tp": 8,
-            "fp": 0,
-            "fn": 2,
-            "precision": 1.0,
-            "recall": 0.8,
-            "f1": 0.8889
+            "tp": 372,
+            "fp": 25,
+            "fn": 342,
+            "precision": 0.937,
+            "recall": 0.521,
+            "f1": 0.6697
           }
         },
         "secret": {
           "name": "secret",
-          "total_gold": 2,
+          "total_gold": 83,
           "strict": {
-            "tp": 0,
-            "fp": 2,
-            "fn": 2,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0
+            "tp": 74,
+            "fp": 410,
+            "fn": 9,
+            "precision": 0.1529,
+            "recall": 0.8916,
+            "f1": 0.261
           },
           "relaxed": {
-            "tp": 2,
-            "fp": 0,
-            "fn": 0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0
+            "tp": 81,
+            "fp": 403,
+            "fn": 2,
+            "precision": 0.1674,
+            "recall": 0.9759,
+            "f1": 0.2857
           }
         }
       },
       "strict_micro": {
-        "tp": 4,
-        "fp": 15,
-        "fn": 21,
-        "precision": 0.2105,
-        "recall": 0.16,
-        "f1": 0.1818
+        "tp": 1158,
+        "fp": 866,
+        "fn": 894,
+        "precision": 0.5721,
+        "recall": 0.5643,
+        "f1": 0.5682
       },
       "strict_macro": {
         "tp": 0,
@@ -539,15 +542,15 @@
         "fn": 0,
         "precision": 0.0,
         "recall": 0.0,
-        "f1": 0.2222
+        "f1": 0.441
       },
       "relaxed_micro": {
-        "tp": 17,
-        "fp": 2,
-        "fn": 8,
-        "precision": 0.8947,
-        "recall": 0.68,
-        "f1": 0.7727
+        "tp": 1325,
+        "fp": 699,
+        "fn": 727,
+        "precision": 0.6546,
+        "recall": 0.6457,
+        "f1": 0.6501
       },
       "relaxed_macro": {
         "tp": 0,
@@ -555,7 +558,7 @@
         "fn": 0,
         "precision": 0.0,
         "recall": 0.0,
-        "f1": 0.6694
+        "f1": 0.5293
       }
     },
     "out_of_schema": {
@@ -563,58 +566,58 @@
         "tw_national_id": {
           "label": "tw_national_id",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
-          "wrong_label": 0,
+          "total": 89,
+          "correct": 88,
+          "wrong_label": 1,
           "missed": 0,
           "detection_rate": 1.0,
-          "generalization_rate": 1.0
+          "generalization_rate": 0.9888
         },
         "tw_nhi_card": {
           "label": "tw_nhi_card",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
-          "wrong_label": 0,
+          "total": 77,
+          "correct": 75,
+          "wrong_label": 2,
           "missed": 0,
           "detection_rate": 1.0,
-          "generalization_rate": 1.0
+          "generalization_rate": 0.974
         },
         "tw_company_id": {
           "label": "tw_company_id",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
-          "wrong_label": 0,
+          "total": 78,
+          "correct": 68,
+          "wrong_label": 10,
           "missed": 0,
           "detection_rate": 1.0,
-          "generalization_rate": 1.0
+          "generalization_rate": 0.8718
         },
         "tw_license_plate": {
           "label": "tw_license_plate",
           "expected_fallback": null,
-          "total": 1,
-          "correct": 0,
-          "wrong_label": 1,
-          "missed": 0,
-          "detection_rate": 1.0,
-          "generalization_rate": 0.0
-        },
-        "tw_passport": {
-          "label": "tw_passport",
-          "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
+          "total": 102,
+          "correct": 102,
           "wrong_label": 0,
           "missed": 0,
           "detection_rate": 1.0,
           "generalization_rate": 1.0
         },
+        "tw_passport": {
+          "label": "tw_passport",
+          "expected_fallback": "account_number",
+          "total": 59,
+          "correct": 58,
+          "wrong_label": 1,
+          "missed": 0,
+          "detection_rate": 1.0,
+          "generalization_rate": 0.9831
+        },
         "tw_driver_license": {
           "label": "tw_driver_license",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
+          "total": 66,
+          "correct": 66,
           "wrong_label": 0,
           "missed": 0,
           "detection_rate": 1.0,
@@ -623,38 +626,38 @@
         "tw_line_id": {
           "label": "tw_line_id",
           "expected_fallback": "private_url",
-          "total": 1,
-          "correct": 1,
-          "wrong_label": 0,
+          "total": 93,
+          "correct": 92,
+          "wrong_label": 1,
           "missed": 0,
           "detection_rate": 1.0,
-          "generalization_rate": 1.0
+          "generalization_rate": 0.9892
         },
         "tw_ptt_id": {
           "label": "tw_ptt_id",
           "expected_fallback": null,
-          "total": 1,
-          "correct": 0,
-          "wrong_label": 1,
-          "missed": 0,
-          "detection_rate": 1.0,
-          "generalization_rate": 0.0
-        },
-        "tw_household_no": {
-          "label": "tw_household_no",
-          "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
+          "total": 68,
+          "correct": 68,
           "wrong_label": 0,
           "missed": 0,
           "detection_rate": 1.0,
           "generalization_rate": 1.0
         },
+        "tw_household_no": {
+          "label": "tw_household_no",
+          "expected_fallback": "account_number",
+          "total": 70,
+          "correct": 66,
+          "wrong_label": 4,
+          "missed": 0,
+          "detection_rate": 1.0,
+          "generalization_rate": 0.9429
+        },
         "tw_medical_license": {
           "label": "tw_medical_license",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
+          "total": 82,
+          "correct": 82,
           "wrong_label": 0,
           "missed": 0,
           "detection_rate": 1.0,
@@ -663,54 +666,79 @@
         "tw_military_id": {
           "label": "tw_military_id",
           "expected_fallback": "account_number",
-          "total": 1,
-          "correct": 1,
+          "total": 75,
+          "correct": 75,
           "wrong_label": 0,
           "missed": 0,
           "detection_rate": 1.0,
           "generalization_rate": 1.0
         }
       },
-      "total_spans": 11,
+      "total_spans": 859,
       "overall_detection_rate": 1.0,
-      "overall_generalization_rate": 0.8182
+      "overall_generalization_rate": 0.9779
     },
     "hard_negatives": {
       "subtypes": {
         "neg_business_name": {
           "subtype": "neg_business_name",
-          "total_items": 2,
-          "fps": 1,
-          "fp_per_item": 0.5
+          "total_items": 0,
+          "fps": 0,
+          "fp_per_item": 0.0
         },
         "neg_public_figure": {
           "subtype": "neg_public_figure",
-          "total_items": 2,
-          "fps": 1,
-          "fp_per_item": 0.5
+          "total_items": 0,
+          "fps": 0,
+          "fp_per_item": 0.0
         },
         "neg_landmark_address": {
           "subtype": "neg_landmark_address",
-          "total_items": 2,
+          "total_items": 0,
           "fps": 0,
           "fp_per_item": 0.0
         },
         "neg_public_hotline": {
           "subtype": "neg_public_hotline",
-          "total_items": 2,
-          "fps": 2,
-          "fp_per_item": 1.0
+          "total_items": 0,
+          "fps": 0,
+          "fp_per_item": 0.0
         },
         "neg_institutional_email": {
           "subtype": "neg_institutional_email",
-          "total_items": 2,
-          "fps": 2,
-          "fp_per_item": 1.0
+          "total_items": 0,
+          "fps": 0,
+          "fp_per_item": 0.0
         }
       },
-      "total_items": 10,
-      "total_fps": 6,
-      "fp_per_item": 0.6
+      "total_items": 0,
+      "total_fps": 0,
+      "fp_per_item": 0.0
+    }
+  },
+  "comparison_with_baseline": {
+    "model_baseline": "fastino/gliner2-privacy-filter-PII-multi",
+    "model_finetuned": "a5566qq123/gliner2-tw-pii",
+    "in_schema": {
+      "strict_micro_f1_baseline": 0.44283746556473835,
+      "strict_micro_f1_finetuned": 0.5682041216879293,
+      "strict_micro_f1_delta": 0.1254,
+      "relaxed_micro_f1_baseline": 0.49586776859504134,
+      "relaxed_micro_f1_finetuned": 0.6501472031403337,
+      "relaxed_micro_f1_delta": 0.1543
+    },
+    "out_of_schema": {
+      "detection_rate_baseline": 0.9988358556461001,
+      "detection_rate_finetuned": 1.0,
+      "detection_rate_delta": 0.0012,
+      "generalization_rate_baseline": 0.6472642607683353,
+      "generalization_rate_finetuned": 0.9778812572759022,
+      "generalization_rate_delta": 0.3306
+    },
+    "hard_negatives": {
+      "fp_per_item_baseline": 0.0,
+      "fp_per_item_finetuned": 0.0,
+      "fp_per_item_reduction": 0.0
     }
   }
 }

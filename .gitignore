@@ -18,3 +18,7 @@ htmlcov/
 data/
 *.parquet
 *.jsonl
+
+# Fine-tuned weights (canonical copy on Hugging Face; see models/README.md)
+models/**
+!models/README.md

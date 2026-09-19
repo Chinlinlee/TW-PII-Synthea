@@ -9,9 +9,14 @@ Prerequisites:
 """
 
 import argparse
+import json
 import logging
 import sys
+from copy import deepcopy
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_TRAINING_CONFIG = REPO_ROOT / "configs" / "gliner2_tw_pii_training.json"
 
 # Setup logging
 logging.basicConfig(
@@ -91,6 +96,12 @@ def parse_args():
         help="Output directory for model weights/checkpoints.",
     )
     parser.add_argument(
+        "--training-config",
+        type=str,
+        default=str(DEFAULT_TRAINING_CONFIG),
+        help=f"Path to GLiNER2 TrainingConfig JSON (default: {DEFAULT_TRAINING_CONFIG.relative_to(REPO_ROOT)}).",
+    )
+    parser.add_argument(
         "--max-len",
         type=int,
         default=None,
@@ -132,6 +143,14 @@ def count_jsonl_lines(path: Path) -> int:
         return 0
     with open(path, "r", encoding="utf-8") as f:
         return sum(1 for line in f if line.strip())
+
+
+def load_training_config_dict(path: Path) -> dict:
+    if not path.is_file():
+        logger.error(f"Training config not found at {path.resolve()}")
+        sys.exit(1)
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def prepare_sample_dataset(source_path: Path, max_samples: int, prefix: str = "train") -> Path:
@@ -216,6 +235,8 @@ def main():
     logger.info(f"Low-VRAM preset: {args.low_vram}")
     logger.info(f"FP16 enabled  : {args.fp16}")
     logger.info(f"Output dir    : {output_dir.resolve()}")
+    training_config_path = Path(args.training_config)
+    logger.info(f"Train config  : {training_config_path.resolve()}")
     logger.info("=" * 70)
 
     # 2. Load Base Model & Inject Chinese Word Splitter
@@ -253,56 +274,29 @@ def main():
 
     # 4. Configure Training Parameters
     logger.info("Initializing TrainingConfig...")
-    config_dict = {
-        "output_dir": str(output_dir),
-        "experiment_name": "gliner2_tw_pii_dryrun" if args.dry_run else "gliner2_tw_pii_finetune",
-        "num_epochs": num_epochs,
-        "max_steps": -1,
-        "batch_size": args.batch_size,
-        "eval_batch_size": args.eval_batch_size,
-        "gradient_accumulation_steps": args.gradient_accumulation_steps,
-        "max_len": args.max_len,
-        "gradient_checkpointing": args.gradient_checkpointing,
-        "encoder_lr": 1e-05,
-        "task_lr": 0.0005,
-        "weight_decay": 0.01,
-        "max_grad_norm": 1.0,
-        "scheduler_type": "cosine",
-        "warmup_ratio": 0.1,
-        "warmup_steps": 0,
-        "fp16": args.fp16,
-        "bf16": False,
-        "eval_strategy": "epoch",
-        "eval_steps": 250,
-        "save_best": True,
-        "metric_for_best": "eval_loss",
-        "greater_is_better": False,
-        "save_total_limit": 2,
-        "early_stopping": not args.dry_run,
-        "early_stopping_patience": 3,
-        "early_stopping_threshold": 0.001,
-        "num_workers": args.num_workers,
-        "pin_memory": True,
-        "seed": 42,
-        "group_by_length": True,
-        "use_lora": True,
-        "lora_r": 16,
-        "lora_alpha": 32.0,
-        "lora_dropout": 0.05,
-        "lora_target_modules": [
-            "encoder",
-            "span_rep",
-            "classifier",
-            "count_embed",
-            "count_pred",
-        ],
-        "save_adapter_only": True,
-        "logging_steps": logging_steps,
-        "report_to_wandb": False,
-        "wandb_project": "gliner2-tw-pii",
-    }
+    config_dict = load_training_config_dict(training_config_path)
+    config_dict = deepcopy(config_dict)
+    config_dict.update(
+        {
+            "output_dir": str(output_dir),
+            "experiment_name": "gliner2_tw_pii_dryrun" if args.dry_run else config_dict.get(
+                "experiment_name", "gliner2_tw_pii_finetune"
+            ),
+            "num_epochs": num_epochs,
+            "batch_size": args.batch_size,
+            "eval_batch_size": args.eval_batch_size,
+            "gradient_accumulation_steps": args.gradient_accumulation_steps,
+            "fp16": args.fp16,
+            "num_workers": args.num_workers,
+            "logging_steps": logging_steps,
+            "early_stopping": False if args.dry_run else config_dict.get("early_stopping", True),
+        }
+    )
+    if args.max_len is not None:
+        config_dict["max_len"] = args.max_len
+    if args.gradient_checkpointing:
+        config_dict["gradient_checkpointing"] = True
 
-    # Instantiate TrainingConfig
     trainer_config = TrainingConfig(**config_dict)
 
     # 5. Initialize Trainer and Execute Training
