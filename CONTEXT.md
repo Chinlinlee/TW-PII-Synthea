@@ -26,3 +26,10 @@ The 21-entity unified schema defined in `src/pii_synthea/taxonomy.py` and `schem
 ### Taiwan Extension Labels (台灣在地專屬標籤)
 The subset of entities not natively present in GLiNER2's 42 classes but vital in Taiwan workflows: `tw_nhi_card` (健保卡), `license_plate` (車牌), `tw_line_id` (LINE ID), `tw_ptt_id` (PTT 帳號), `tw_household_no` (戶號), `tw_medical_license` (醫事證照字號), and `tw_military_id` (軍人證號).
 
+### Deterministic PII Generator (演算法校驗生成器)
+The programmatic entity generation subsystem under `src/pii_synthea/generators/` that produces algorithmically valid Taiwan PII: National IDs with county letter weights and check digits, New and Old ARCs, 8-digit Unified Business Numbers with MOF mod 10 / mod 5 logic, Luhn-valid credit cards, 368 official township postal codes, authentic Taiwanese surnames/given names/indigenous names, and realistic phone numbers.
+
+### Offset Preservation Engine (位移保全與 Span 校驗引擎)
+The character-level offset management architecture implemented in `TemplateEngine`, `SpanReplacer`, and `SynthesisResult`. It guarantees 100% boundary fidelity by calculating exact `[start, end]` boundaries across variable-length substitutions, enforcing non-overlapping constraints, and asserting `text[start:end] == span.text` prior to emitting GLiNER2 training examples.
+
+

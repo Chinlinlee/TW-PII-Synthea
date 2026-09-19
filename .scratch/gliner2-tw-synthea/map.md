@@ -17,6 +17,7 @@
 <!-- the index — one line per closed ticket: enough to judge relevance, then zoom the link for the detail the ticket holds -->
 
 - [台灣 PII 實體與 GLiNER2 標籤映射體系設計](issues/02-taiwan-pii-label-taxonomy-mapping.md) — 確立 21 類台灣 PII 實體之混成映射架構（14 類對齊 GLiNER2 原生標籤 + 7 類在地擴充標籤如健保卡、車牌、LINE ID），產出 schema.json 與 taxonomy.py 映射庫。
+- [演算法合法之台灣在地 PII 生成與雙向驗證器原型](issues/03-deterministic-taiwan-pii-generator-and-validator.md) — 實作 21 類台灣 PII 實體演算法生成與雙向校驗庫（身分證/居留證 Checksum、統編 mod 10 / mod 5、368 鄉鎮區地址與 3+3 郵遞區號、Luhn 信用卡、電話/健保卡/車牌等），並建置字元層級位移保全引擎（TemplateEngine, SpanReplacer）確保 assert text[start:end] == span.text 100% 正確。
 
 
 ## Not yet specified
