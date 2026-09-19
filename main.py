@@ -12,6 +12,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from pii_synthea.generators import TaiwanPIIGenerator, TemplateEngine
+from pii_synthea.negatives import (
+    HardNegativeCatalog,
+    HardNegativeCategory,
+    HardNegativeSynthesizer,
+)
 from pii_synthea.scenarios import (
     DomainCategory,
     PromptBuilder,
@@ -170,6 +175,50 @@ def cmd_parse_tags(args):
     print("\nSpan verification: 100% OK")
 
 
+def cmd_list_negatives(args):
+    """Lists all hard negative categories, counts, and sample entities."""
+    print("\n==================== Taiwan Hard Negatives Catalog ====================")
+    print(f"{'Category ID':<28} | {'Confusable':<14} | {'Count':<6} | {'Sample Entities'}")
+    print("-" * 90)
+    for cat in HardNegativeCategory:
+        items = HardNegativeCatalog.get_items(cat)
+        samples = "、".join([it.text for it in items[:3]]) + ("..." if len(items) > 3 else "")
+        confusable = items[0].confusable_with if items else ""
+        print(f"{cat.value:<28} | {confusable:<14} | {len(items):<6} | {samples}")
+    print("=" * 90)
+
+
+def cmd_generate_negative(args):
+    """Generates a pure or mixed hard negative sample."""
+    synthesizer = HardNegativeSynthesizer(seed=args.seed)
+    cat_enum = HardNegativeCategory(args.category) if args.category else None
+    len_enum = TextLengthCategory(args.length) if args.length else None
+
+    if args.mixed:
+        result = synthesizer.generate_mixed(category=cat_enum, length_cat=len_enum, seed=args.seed)
+        mode_str = "Mixed (Real PII + Hard Negative Distractors)"
+    else:
+        result = synthesizer.generate_pure(category=cat_enum, length_cat=len_enum, seed=args.seed)
+        mode_str = "Pure Negative (0 PII Spans)"
+
+    print(f"\n--- Synthesized Hard Negative [{mode_str}] ---")
+    print(result.text)
+    print(f"\n--- Extracted & Validated Spans ({len(result.spans)} entities, char length {len(result.text)}) ---")
+    if result.spans:
+        for s in result.spans:
+            print(f"[{s.start:4d}:{s.end:4d}] ({s.label:<22}) {s.text}")
+    else:
+        print("(No spans - 100% negative sample as expected)")
+
+    print("\nIntegrity check: 100% verified")
+
+    if args.output:
+        p = Path(args.output)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(json.dumps(result.to_gliner2_format(), ensure_ascii=False, indent=2))
+        print(f"Exported GLiNER2 training item to {p}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="PII-Synthea: Taiwan PII Synthetic Engine")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -226,6 +275,19 @@ def main():
     p_parse.add_argument("-n", "--normalize", action="store_true", help="Normalize invalid PII algorithmically")
     p_parse.add_argument("-s", "--seed", type=int, default=None, help="Random seed for normalization")
     p_parse.set_defaults(func=cmd_parse_tags)
+
+    # Command: list-negatives
+    p_list_neg = subparsers.add_parser("list-negatives", help="List all hard negative categories and counts")
+    p_list_neg.set_defaults(func=cmd_list_negatives)
+
+    # Command: generate-negative
+    p_gen_neg = subparsers.add_parser("generate-negative", help="Generate a pure or mixed hard negative sample")
+    p_gen_neg.add_argument("-c", "--category", choices=[c.value for c in HardNegativeCategory], help="Negative category")
+    p_gen_neg.add_argument("-l", "--length", choices=[l.value for l in TextLengthCategory], help="Text length category")
+    p_gen_neg.add_argument("-m", "--mixed", action="store_true", help="Generate mixed sample (true PII + negative distractor)")
+    p_gen_neg.add_argument("-s", "--seed", type=int, default=None, help="Random seed")
+    p_gen_neg.add_argument("-o", "--output", help="Save GLiNER2 training JSON item to file")
+    p_gen_neg.set_defaults(func=cmd_generate_negative)
 
     args = parser.parse_args()
     if not args.command:

@@ -110,6 +110,51 @@ class ScenarioSynthesizer:
 
         return results
 
+    def synthesize_batch_with_negatives(
+        self,
+        total_count: int,
+        negative_ratio: float = 0.15,
+        pure_negative_ratio: float = 0.5,
+        seed: Optional[int] = None,
+    ) -> List[SynthesisResult]:
+        """
+        Synthesizes a combined batch blending standard scenario PII data with hard negatives.
+
+        Args:
+            total_count: Total items to generate.
+            negative_ratio: Fraction of items that are hard negatives (0.0 to 1.0).
+            pure_negative_ratio: Among hard negatives, fraction that are pure (0 spans).
+            seed: Reproducible seed.
+        """
+        from pii_synthea.negatives.generator import HardNegativeSynthesizer
+
+        local_rng = random.Random(seed) if seed is not None else self.rng
+        neg_count = round(total_count * negative_ratio)
+        pos_count = total_count - neg_count
+
+        results: List[SynthesisResult] = []
+
+        # 1. Standard PII scenarios
+        if pos_count > 0:
+            pos_batch = self.synthesize_batch(
+                count=pos_count,
+                seed=local_rng.randint(1, 10_000_000),
+            )
+            results.extend(pos_batch)
+
+        # 2. Hard negatives
+        if neg_count > 0:
+            neg_synth = HardNegativeSynthesizer(generator=self.generator, seed=local_rng.randint(1, 10_000_000))
+            neg_batch = neg_synth.generate_batch(
+                count=neg_count,
+                pure_negative_ratio=pure_negative_ratio,
+                seed=local_rng.randint(1, 10_000_000),
+            )
+            results.extend(neg_batch)
+
+        local_rng.shuffle(results)
+        return results
+
     def build_llm_prompt(
         self,
         scenario_id: Optional[str] = None,
