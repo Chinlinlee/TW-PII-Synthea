@@ -20,7 +20,9 @@ from pii_synthea.pipeline.exporter import DatasetExporter
 from pii_synthea.pipeline.rate_limiter import RateLimiter
 from pii_synthea.pipeline.stats import PipelineStats
 from pii_synthea.pipeline.validator import ValidationGate
-from pii_synthea.scenarios.domains import DomainCategory, TextLengthCategory
+from pii_synthea.generators.replacement import SynthesisResult
+from pii_synthea.pipeline.llm_client import OpenAICompatibleLLMClient, spans_to_tagged_text
+from pii_synthea.scenarios.domains import DomainCategory, ScenarioRegistry, TextLengthCategory
 from pii_synthea.scenarios.generator import ScenarioSynthesizer
 
 
@@ -55,6 +57,63 @@ class BatchPipelineOrchestrator:
         self.stats = PipelineStats()
 
         self.rng = random.Random(self.config.seed)
+        self._llm_client: Optional[OpenAICompatibleLLMClient] = None
+        if self.config.generation_source == "llm":
+            self._llm_client = OpenAICompatibleLLMClient.from_env()
+            if self.config.llm_model:
+                self._llm_client.model = self.config.llm_model
+
+    def _synthesize_positive(
+        self,
+        chosen_domain: DomainCategory,
+        chosen_length: TextLengthCategory,
+        item_seed: int,
+    ) -> SynthesisResult:
+        if self.config.generation_source != "llm":
+            return self.scenario_synthesizer.synthesize_from_seed(
+                domain=chosen_domain,
+                length_cat=chosen_length,
+                seed=item_seed,
+            )
+
+        scenarios = ScenarioRegistry.filter(domain=chosen_domain, length_cat=chosen_length)
+        if not scenarios:
+            scenarios = ScenarioRegistry.filter(domain=chosen_domain)
+        if not scenarios:
+            scenarios = ScenarioRegistry.list_all()
+        local_rng = random.Random(item_seed)
+        scenario = local_rng.choice(scenarios)
+
+        prompts = self.scenario_synthesizer.build_llm_prompt(
+            scenario_id=scenario.scenario_id,
+            include_few_shot=True,
+            template_only=False,
+        )
+
+        raw_output: Optional[str] = None
+        if self._llm_client and self._llm_client.is_configured:
+            try:
+                raw_output = self._llm_client.complete(prompts["system"], prompts["user"])
+            except RuntimeError:
+                if not self.config.llm_offline_fallback:
+                    raise
+
+        if raw_output is None:
+            if not self.config.llm_offline_fallback:
+                raise RuntimeError(
+                    "LLM generation unavailable. Configure API credentials or pass --llm-offline-fallback."
+                )
+            seed_result = self.scenario_synthesizer.synthesize_from_seed(
+                domain=chosen_domain,
+                length_cat=chosen_length,
+                seed=item_seed,
+            )
+            raw_output = spans_to_tagged_text(seed_result.text, seed_result.spans)
+
+        return self.scenario_synthesizer.ingest_llm_response(
+            raw_output,
+            normalize_invalid=True,
+        )
 
     def run(self) -> Dict[str, Any]:
         """
@@ -126,10 +185,10 @@ class BatchPipelineOrchestrator:
                 chosen_domain = min(domains, key=lambda d: self.stats.domains[d.value])
                 chosen_length = min(lengths, key=lambda l: self.stats.lengths[l.value])
 
-                res = self.scenario_synthesizer.synthesize_from_seed(
-                    domain=chosen_domain,
-                    length_cat=chosen_length,
-                    seed=item_seed,
+                res = self._synthesize_positive(
+                    chosen_domain=chosen_domain,
+                    chosen_length=chosen_length,
+                    item_seed=item_seed,
                 )
                 domain_str = chosen_domain.value
                 length_str = chosen_length.value

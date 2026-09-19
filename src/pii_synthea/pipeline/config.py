@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Literal, Optional
+
+GenerationSource = Literal["seed", "llm"]
 
 
 @dataclass
@@ -26,6 +28,9 @@ class PipelineConfig:
     rate_limit_per_sec: Optional[float] = None
     seed: Optional[int] = 42
     max_retries_per_item: int = 10
+    generation_source: GenerationSource = "seed"
+    llm_model: Optional[str] = None
+    llm_offline_fallback: bool = False
 
     def __post_init__(self) -> None:
         if isinstance(self.output_dir, str):

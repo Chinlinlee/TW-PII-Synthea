@@ -262,6 +262,80 @@ class TestDatasetExporter:
         assert summary_data["val_samples"] == 2
 
 
+class TestLLMDotenv:
+    """Tests lazy .env loading from OpenAICompatibleLLMClient.from_env()."""
+
+    def test_from_env_loads_custom_env_file(self, tmp_path, monkeypatch):
+        from pii_synthea.pipeline.dotenv_loader import reset_dotenv_loader_state
+        from pii_synthea.pipeline.llm_client import OpenAICompatibleLLMClient
+
+        for key in (
+            "PII_SYNTH_LLM_API_KEY",
+            "OPENAI_API_KEY",
+            "PII_SYNTH_LLM_BASE_URL",
+            "PII_SYNTH_LLM_MODEL",
+            "PII_SYNTH_ENV_FILE",
+        ):
+            monkeypatch.delenv(key, raising=False)
+
+        env_file = tmp_path / "test.env"
+        env_file.write_text(
+            "PII_SYNTH_LLM_API_KEY=from-dotenv\n"
+            "PII_SYNTH_LLM_BASE_URL=https://opencode.ai/zen/v1\n"
+            "PII_SYNTH_LLM_MODEL=big-pickle\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("PII_SYNTH_ENV_FILE", str(env_file))
+
+        reset_dotenv_loader_state()
+        client = OpenAICompatibleLLMClient.from_env()
+
+        assert client.api_key == "from-dotenv"
+        assert client.base_url == "https://opencode.ai/zen/v1"
+        assert client.model == "big-pickle"
+
+    def test_process_env_wins_over_dotenv(self, tmp_path, monkeypatch):
+        from pii_synthea.pipeline.dotenv_loader import reset_dotenv_loader_state
+        from pii_synthea.pipeline.llm_client import OpenAICompatibleLLMClient
+
+        for key in ("PII_SYNTH_LLM_API_KEY", "OPENAI_API_KEY", "PII_SYNTH_ENV_FILE"):
+            monkeypatch.delenv(key, raising=False)
+
+        env_file = tmp_path / "test.env"
+        env_file.write_text("PII_SYNTH_LLM_API_KEY=from-dotenv\n", encoding="utf-8")
+        monkeypatch.setenv("PII_SYNTH_ENV_FILE", str(env_file))
+        monkeypatch.setenv("PII_SYNTH_LLM_API_KEY", "from-shell")
+
+        reset_dotenv_loader_state()
+        client = OpenAICompatibleLLMClient.from_env()
+
+        assert client.api_key == "from-shell"
+
+
+class TestLLMGenerationPipeline:
+    """Tests LLM ingest path with offline fallback (no external API)."""
+
+    def test_llm_offline_fallback_orchestrator(self, tmp_path):
+        from pii_synthea.pipeline.config import PipelineConfig
+        from pii_synthea.pipeline.orchestrator import BatchPipelineOrchestrator
+
+        out_dir = tmp_path / "llm_offline"
+        config = PipelineConfig(
+            total_count=12,
+            output_dir=out_dir,
+            val_ratio=0.25,
+            negative_ratio=0.25,
+            generation_source="llm",
+            llm_offline_fallback=True,
+            export_parquet=False,
+            seed=7,
+        )
+        orch = BatchPipelineOrchestrator(config=config)
+        result = orch.run()
+        assert result["total_samples"] == 12
+        assert (out_dir / "train.jsonl").exists()
+
+
 class TestBatchPipelineOrchestrator:
     """Tests end-to-end batch generation orchestrator."""
 
@@ -377,6 +451,9 @@ class TestPipelineCLI:
             export_tw_bench=True,
             rate_limit=None,
             seed=99,
+            generation_source="seed",
+            llm_model=None,
+            llm_offline_fallback=False,
         )
 
         main.cmd_generate_dataset(args)

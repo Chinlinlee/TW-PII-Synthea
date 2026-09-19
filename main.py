@@ -249,10 +249,17 @@ def cmd_generate_dataset(args):
         export_tw_bench=args.export_tw_bench,
         rate_limit_per_sec=args.rate_limit,
         seed=args.seed,
+        generation_source=args.generation_source,
+        llm_model=args.llm_model,
+        llm_offline_fallback=args.llm_offline_fallback,
     )
 
     print(f"\n==================== PII-Synthea Batch Pipeline Orchestrator ====================")
     print(f"Target count        : {config.total_count:,} samples")
+    print(f"Generation source   : {config.generation_source}")
+    if config.generation_source == "llm":
+        print(f"LLM model           : {config.llm_model or '(from env PII_SYNTH_LLM_MODEL)'}")
+        print(f"LLM offline fallback: {config.llm_offline_fallback}")
     print(f"Output directory    : {config.output_dir.resolve()}")
     print(f"Train / Val split   : {int((1 - config.val_ratio)*100)}% / {int(config.val_ratio*100)}%")
     print(f"Hard negative ratio : {config.negative_ratio:.1%} (pure: {config.pure_negative_ratio:.1%})")
@@ -343,6 +350,28 @@ def cmd_export_train_script(args):
     out_path = recipe.export_training_script(args.output)
     print(f"\nSuccessfully generated standalone fine-tuning script at: {out_path.resolve()}")
     print(f"To execute training: python {out_path}")
+
+
+def cmd_ingest_llm(args):
+    """Ingests XML-tagged LLM output into a GLiNER2 JSONL training record."""
+    synthesizer = ScenarioSynthesizer(seed=args.seed)
+    raw = args.text
+    if not raw and args.file:
+        with open(args.file, "r", encoding="utf-8") as f:
+            raw = f.read()
+    if not raw:
+        print("Error: provide --text or --file with tagged LLM output.")
+        sys.exit(1)
+
+    result = synthesizer.ingest_llm_response(raw, normalize_invalid=not args.no_normalize)
+    item = result.to_gliner2_format()
+
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    print(f"Ingested 1 record ({len(result.spans)} spans, {len(result.text)} chars) -> {out_path.resolve()}")
 
 
 def cmd_validate_dataset(args):
@@ -535,7 +564,35 @@ def main():
     p_dataset.add_argument("--export-tw-bench", action="store_true", help="Also export tw-PII-bench format JSONL")
     p_dataset.add_argument("--rate-limit", type=float, default=None, help="Max generation calls per second")
     p_dataset.add_argument("-s", "--seed", type=int, default=42, help="Random seed (default: 42)")
+    p_dataset.add_argument(
+        "--generation-source",
+        choices=["seed", "llm"],
+        default="seed",
+        help="Positive sample source: seed templates or LLM-tagged ingest (default: seed)",
+    )
+    p_dataset.add_argument("--llm-model", default=None, help="LLM model id (default: env PII_SYNTH_LLM_MODEL)")
+    p_dataset.add_argument(
+        "--llm-offline-fallback",
+        action="store_true",
+        help="When LLM API is unavailable, replay seed synthesis through tag ingest + normalize",
+    )
     p_dataset.set_defaults(func=cmd_generate_dataset)
+
+    # Command: ingest-llm
+    p_ingest_llm = subparsers.add_parser(
+        "ingest-llm",
+        help="Parse XML-tagged LLM output and append one GLiNER2 JSONL record",
+    )
+    p_ingest_llm.add_argument("-t", "--text", help="Tagged text string")
+    p_ingest_llm.add_argument("-f", "--file", help="Path to tagged text file")
+    p_ingest_llm.add_argument("-o", "--output", required=True, help="Output JSONL path (append)")
+    p_ingest_llm.add_argument("-s", "--seed", type=int, default=None, help="Random seed for normalization")
+    p_ingest_llm.add_argument(
+        "--no-normalize",
+        action="store_true",
+        help="Skip algorithmic PII normalization for invalid entities",
+    )
+    p_ingest_llm.set_defaults(func=cmd_ingest_llm)
 
     # Command: inspect-recipe
     p_recipe = subparsers.add_parser("inspect-recipe", help="Inspect GLiNER2 Taiwan fine-tuning specifications and architecture")
