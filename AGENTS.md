@@ -10,7 +10,7 @@ This file provides guidance to coding agents working in this repository.
 ## Agent skills
 
 ### Issue tracker
-Local markdown issue tracker under `.scratch/`. See `docs/agents/issue-tracker.md`.
+GitHub Issues via `gh` CLI (`Chinlinlee/TW-PII-Synthea`). See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 Single-context layout with `CONTEXT.md` at repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.

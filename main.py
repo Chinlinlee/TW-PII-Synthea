@@ -27,6 +27,7 @@ from pii_synthea.scenarios import (
     TagToSpanParser,
     TextLengthCategory,
 )
+from pii_synthea.pipeline import BatchPipelineOrchestrator, PipelineConfig
 from pii_synthea.taxonomy import LabelGroup, TaxonomyMapper
 
 
@@ -219,6 +220,61 @@ def cmd_generate_negative(args):
         print(f"Exported GLiNER2 training item to {p}")
 
 
+def cmd_generate_dataset(args):
+    """Orchestrates batch generation and export of GLiNER2 training dataset."""
+    config = PipelineConfig(
+        total_count=args.count,
+        output_dir=Path(args.output_dir),
+        val_ratio=args.val_ratio,
+        negative_ratio=args.negative_ratio,
+        pure_negative_ratio=args.pure_negative_ratio,
+        batch_size=args.batch_size,
+        checkpoint_interval=args.checkpoint_interval,
+        resume=args.resume,
+        export_parquet=not args.no_parquet,
+        export_tw_bench=args.export_tw_bench,
+        rate_limit_per_sec=args.rate_limit,
+        seed=args.seed,
+    )
+
+    print(f"\n==================== PII-Synthea Batch Pipeline Orchestrator ====================")
+    print(f"Target count        : {config.total_count:,} samples")
+    print(f"Output directory    : {config.output_dir.resolve()}")
+    print(f"Train / Val split   : {int((1 - config.val_ratio)*100)}% / {int(config.val_ratio*100)}%")
+    print(f"Hard negative ratio : {config.negative_ratio:.1%} (pure: {config.pure_negative_ratio:.1%})")
+    print(f"Resume existing run : {config.resume}")
+    print(f"Parquet export      : {config.export_parquet}")
+    print(f"tw-PII-bench export : {config.export_tw_bench}")
+    print("=" * 80)
+
+    def on_progress(current: int, total: int, stats: dict):
+        step = max(1, total // 10)
+        if current % step == 0 or current == total:
+            pct = (current / total) * 100
+            print(
+                f"Progress: [{current:>6d}/{total:>6d}] ({pct:5.1f}%) | "
+                f"Positives: {stats['composition']['positive_samples']} | "
+                f"Negatives: {stats['composition']['total_negatives']} | "
+                f"Duplicates Filtered: {stats['duplicates_skipped']}"
+            )
+
+    orch = BatchPipelineOrchestrator(config=config, progress_callback=on_progress)
+    result = orch.run()
+    stats = result["stats"]
+
+    print("\n==================== Pipeline Run Completed ====================")
+    print(f"Total valid samples : {stats['total_samples']:,} "
+          f"({stats['train_samples']:,} train / {stats['val_samples']:,} val)")
+    print(f"Duration            : {stats['duration_seconds']:.2f}s "
+          f"({stats['throughput_samples_per_second']:.1f} samples/sec)")
+    print(f"Duplicates filtered : {stats['duplicates_skipped']}")
+    print(f"Validation failures : {stats['validation_failures']}")
+    print(f"\nExported Files:")
+    for key, path in result["exported_files"].items():
+        print(f"  - {key:<16}: {path}")
+    print("=" * 80)
+
+
 def main():
     parser = argparse.ArgumentParser(description="PII-Synthea: Taiwan PII Synthetic Engine")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -288,6 +344,22 @@ def main():
     p_gen_neg.add_argument("-s", "--seed", type=int, default=None, help="Random seed")
     p_gen_neg.add_argument("-o", "--output", help="Save GLiNER2 training JSON item to file")
     p_gen_neg.set_defaults(func=cmd_generate_negative)
+
+    # Command: generate-dataset
+    p_dataset = subparsers.add_parser("generate-dataset", help="Orchestrate batch generation and export GLiNER2 dataset")
+    p_dataset.add_argument("-n", "--count", type=int, default=1000, help="Total sample count to generate (default: 1000)")
+    p_dataset.add_argument("-o", "--output-dir", default="data/gliner2_tw", help="Output directory path (default: data/gliner2_tw)")
+    p_dataset.add_argument("--val-ratio", type=float, default=0.20, help="Validation set split ratio (default: 0.20)")
+    p_dataset.add_argument("--negative-ratio", type=float, default=0.15, help="Hard negative ratio (default: 0.15)")
+    p_dataset.add_argument("--pure-negative-ratio", type=float, default=0.50, help="Fraction of negatives that are pure (default: 0.50)")
+    p_dataset.add_argument("--batch-size", type=int, default=100, help="Batch generation size (default: 100)")
+    p_dataset.add_argument("--checkpoint-interval", type=int, default=100, help="Save checkpoint every N samples (default: 100)")
+    p_dataset.add_argument("--resume", action="store_true", help="Resume generation from previous checkpoint")
+    p_dataset.add_argument("--no-parquet", action="store_true", help="Disable Parquet file export")
+    p_dataset.add_argument("--export-tw-bench", action="store_true", help="Also export tw-PII-bench format JSONL")
+    p_dataset.add_argument("--rate-limit", type=float, default=None, help="Max generation calls per second")
+    p_dataset.add_argument("-s", "--seed", type=int, default=42, help="Random seed (default: 42)")
+    p_dataset.set_defaults(func=cmd_generate_dataset)
 
     args = parser.parse_args()
     if not args.command:
