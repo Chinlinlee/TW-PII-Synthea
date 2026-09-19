@@ -229,7 +229,7 @@ def main():
     # Reload or use current model
     test_model = model
     test_model.set_word_splitter(CharLevelSplitter())
-    preds = test_model.extract_entities(test_text, labels=labels, threshold=0.5)
+    preds = test_model.extract_entities(test_text, labels, threshold=0.5)
     
     logger.info(f"Input Text : {{test_text}}")
     logger.info(f"Predictions: {{preds}}")
