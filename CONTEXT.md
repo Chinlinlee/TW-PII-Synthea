@@ -53,6 +53,18 @@ The character-level token splitting policy required by GLiNER2 when processing c
 ### GLiNER2FineTuneRecipe (GLiNER2 微調配方與腳本引擎)
 The end-to-end training management subsystem implemented in `src/pii_synthea/training/`. It defines standard training parameters (differential learning rates: `encoder_lr=1e-5`, `task_lr=5e-4`), LoRA target modules (`encoder`, `span_rep`, `classifier`, `count_embed`, `count_pred`), and generates standalone executable training scripts (`scripts/train_gliner2_tw.py`) alongside dual-compatible dataset formats (`{"input": ..., "output": {"entities": ...}}` + exact spans).
 
+### EvaluationHarness (評測工具與對比框架)
+The benchmark evaluation and regression testing framework implemented under `src/pii_synthea/evaluation/`. It executes zero-shot baseline and fine-tuned model evaluation against `lianghsun/tw-PII-bench`, calculating strict exact match and boundary-relaxed (IoU) span metrics, Taiwan OOD detection/generalization, and hard negative false positive rates across `short`, `mid`, and `long` splits.
+
+### tw-PII-bench (台灣在地 PII 客觀評測基準)
+The gold standard Taiwan PII detection benchmark developed by Liang Hsun Huang (`lianghsun/tw-PII-bench`), structured into 3 length tiers (`short`, `mid`, `long`) across 3 core blocks:
+- **Block A (In-schema)**: 8 canonical PII classes (`private_person`, `private_phone`, `private_email`, `private_address`, `private_date`, `private_url`, `account_number`, `secret`).
+- **Block B (Taiwan OOD)**: 11 Taiwan-specific PII classes with defined fallback labels (`tw_national_id`, `tw_nhi_card`, `tw_company_id`, `tw_license_plate`, `tw_passport`, `tw_driver_license`, `tw_line_id`, `tw_ptt_id`, `tw_household_no`, `tw_medical_license`, `tw_military_id`).
+- **Block C (Hard Negatives)**: 5 confusing distractor subtypes (`neg_business_name`, `neg_public_figure`, `neg_landmark_address`, `neg_public_hotline`, `neg_institutional_email`) containing zero true PII spans.
+
+### Effective Gold (有效基準標籤與 Fallback 映射)
+The benchmark evaluation convention where Out-of-Distribution (OOD) ground-truth spans are mapped to their `expected_model_label` (e.g. `tw_national_id` mapped to `account_number`) when calculating in-schema F1 against un-fine-tuned baseline models whose taxonomy lacks native Taiwan labels. OOD entities without fallback (`tw_license_plate`, `tw_ptt_id`) are excluded from effective in-schema scoring and evaluated purely in the OOD diagnostic block.
+
 
 
 

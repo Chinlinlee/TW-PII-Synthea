@@ -20,6 +20,7 @@
 - [LLM 語境生成與 Tag-to-Span 解析管線設計](issues/04-llm-tag-based-context-and-scenario-generator.md) — 建立六大領域情境矩陣（醫療、金融、電信、網購、租屋、法律）、三級篇幅分佈（short 15-120 字、mid 200-1000 字、long 1500-5000 字）、XML 標籤字元級去標籤與位移保全抽取器（TagToSpanParser）、正規化校驗抽換、Prompt 工程器與 19 組高真實度離線種子庫，支援 GLiNER2 與 tw-PII-bench 雙格式匯出。
 - [台灣在地難辨負樣本（Hard Negatives）生成策略調研](issues/05-hard-negatives-synthesis-strategy.md) — 建立六大維度（人名品牌、歷史政治與偉人路名、知名地標、緊急與0800專線、政府學校通用信箱、發票與代碼序號）共80+筆台灣在地難辨實體名冊，實作純負樣本（0 spans）與混雜干擾樣本雙軌合成器（HardNegativeSynthesizer），結合字元級位移校驗，支援GLiNER2空標註訓練，推薦15%負樣本混合比例。
 - [萬筆資料批次生成調度器與儲存匯出管線原型](issues/06-pipeline-batch-orchestration-and-storage.md) — 實作高可靠批次生成調度器（BatchPipelineOrchestrator）、嚴格格式驗證關卡（ValidationGate）、SHA-256 全流程去重（Deduplicator）、速率限制（RateLimiter）、斷點續傳檢查點（CheckpointManager）與雙格式匯出（GLiNER2 JSONL、Apache Parquet、tw-PII-bench JSONL、summary.json），整合 CLI `generate-dataset` 命令，本機生成輸送量達 640+ samples/sec。
+- [GLiNER2 台灣 PII 評測工具與 Baseline 對比框架原型](issues/07-gliner2-tw-eval-benchmark-harness.md) — 建置對齊 `lianghsun/tw-PII-bench` 規格之完整評測管線（`EvaluationHarness`），支援嚴格全符（Strict Exact Match）與邊界放寬（Boundary-Relaxed IoU）雙模式評測，涵蓋 Block A（8 類 In-schema）、Block B（11 類 Taiwan OOD 診斷）、Block C（5 類 Hard Negatives 偽陽性）與三大長度分流（short/mid/long），實作 Baseline Zero-Shot 與微調模型之多維度對比、指標增益計算（Δ）、CLI `evaluate-benchmark` 命令、獨立評測腳本（`scripts/evaluate_gliner2_tw.py`）與 Markdown / JSON 基準報告產出。
 
 
 
