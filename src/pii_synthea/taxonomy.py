@@ -1,0 +1,418 @@
+"""
+Taiwan PII Taxonomy & GLiNER2 Label Mapping System
+PII-Synthea Project - Canonical Schema & Taxonomy Specification
+"""
+
+from __future__ import annotations
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional, Set
+
+
+class LabelGroup(str, Enum):
+    PERSON = "person_names"
+    CONTACT = "contact_address"
+    GOV_TAX_ID = "government_tax_ids"
+    BANKING = "banking_payment"
+    DIGITAL_IDENTITY = "digital_identity"
+    CREDENTIALS = "credentials_secrets"
+    DATES = "sensitive_dates"
+    TAIWAN_EXTENSIONS = "taiwan_specific_extensions"
+
+
+@dataclass(frozen=True)
+class PIIEntitySpec:
+    canonical_id: str
+    display_name_zh: str
+    group: LabelGroup
+    # GLiNER2 Primary Label (mapped to GLiNER2 native 42 labels or designated Taiwan extension)
+    gliner2_label: str
+    # GLiNER2 Prompt Description (used for schema-conditioned extraction)
+    prompt_description_en: str
+    prompt_description_zh: str
+    # Alignment with tw-PII-bench
+    tw_pii_bench_label: str
+    tw_pii_bench_fallback: Optional[str]
+    is_extension: bool
+    regex_pattern: Optional[str] = None
+    examples: List[str] = field(default_factory=list)
+
+
+# Complete Canonical Taxonomy Definition
+CANONICAL_TAXONOMY: Dict[str, PIIEntitySpec] = {
+    # 1. 人名 (Person Names)
+    "person": PIIEntitySpec(
+        canonical_id="person",
+        display_name_zh="個人中文/英文姓名",
+        group=LabelGroup.PERSON,
+        gliner2_label="person",
+        prompt_description_en="Names of real private individuals, including full names, Chinese names, indigenous names, and romanized names",
+        prompt_description_zh="真實自然人姓名，包含中文姓名、原住民傳統名、複姓與羅馬拼音",
+        tw_pii_bench_label="private_person",
+        tw_pii_bench_fallback="private_person",
+        is_extension=False,
+        examples=["陳志豪", "林佳玲", "尤瑪·達魯", "歐陽小明", "David Huang"],
+    ),
+    
+    # 2. 台灣身分證字號 (Taiwan National ID Number)
+    "national_id_number": PIIEntitySpec(
+        canonical_id="national_id_number",
+        display_name_zh="台灣身分證字號/居留證號",
+        group=LabelGroup.GOV_TAX_ID,
+        gliner2_label="national_id_number",
+        prompt_description_en="Taiwan National Identification Number or Alien Resident Certificate (ARC) number, 10 characters starting with an uppercase letter",
+        prompt_description_zh="中華民國國民身分證統一編號或外僑居留證號，首碼為大寫英文字母之10碼編號",
+        tw_pii_bench_label="tw_national_id",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        regex_pattern=r"[A-Z][1289ABCD]\d{8}",
+        examples=["A123456789", "B298765432", "F120394857"],
+    ),
+
+    # 3. 台灣健保卡卡號 (Taiwan National Health Insurance Card)
+    "tw_nhi_card": PIIEntitySpec(
+        canonical_id="tw_nhi_card",
+        display_name_zh="台灣全民健康保險卡號",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_nhi_card",
+        prompt_description_en="Taiwan National Health Insurance (NHI) card number, a 12-digit identification number on the physical NHI IC card",
+        prompt_description_zh="台灣全民健保卡卡號，實體晶片卡上的12碼數字",
+        tw_pii_bench_label="tw_nhi_card",
+        tw_pii_bench_fallback="account_number",
+        is_extension=True,
+        regex_pattern=r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",
+        examples=["000012345678", "0000-9876-5432"],
+    ),
+
+    # 4. 營利事業統一編號 (Taiwan Unified Business Tax ID)
+    "tax_id": PIIEntitySpec(
+        canonical_id="tax_id",
+        display_name_zh="公司營利事業統一編號 (統編)",
+        group=LabelGroup.GOV_TAX_ID,
+        gliner2_label="tax_id",
+        prompt_description_en="Taiwan 8-digit Unified Business Number (UBN / 統編) used for corporate and business taxation",
+        prompt_description_zh="台灣8位數營利事業統一編號（統編），用於報稅與商業登記",
+        tw_pii_bench_label="tw_company_id",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        regex_pattern=r"\b\d{8}\b",
+        examples=["12345678", "80123456", "54321098"],
+    ),
+
+    # 5. 車牌號碼 (License Plate)
+    "license_plate": PIIEntitySpec(
+        canonical_id="license_plate",
+        display_name_zh="汽機車車牌號碼",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="license_plate",
+        prompt_description_en="Taiwan vehicle registration license plate numbers for cars and motorcycles, such as ABC-1234 or 123-AB",
+        prompt_description_zh="台灣汽機車車輛號牌，例如 ABC-1234、AB-1234 或 123-ABC",
+        tw_pii_bench_label="tw_license_plate",
+        tw_pii_bench_fallback=None,
+        is_extension=True,
+        regex_pattern=r"\b[A-Z]{2,3}[-\s]?\d{3,4}\b|\b\d{3,4}[-\s]?[A-Z]{2}\b",
+        examples=["ABC-1234", "KEA-5678", "9988-AB"],
+    ),
+
+    # 6. 中華民國護照號碼 (Taiwan Passport Number)
+    "passport_number": PIIEntitySpec(
+        canonical_id="passport_number",
+        display_name_zh="護照號碼",
+        group=LabelGroup.GOV_TAX_ID,
+        gliner2_label="passport_number",
+        prompt_description_en="Passport numbers issued by the Ministry of Foreign Affairs, usually 9 digits",
+        prompt_description_zh="中華民国外交部發行之護照號碼，通常為9位數字",
+        tw_pii_bench_label="tw_passport",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        regex_pattern=r"\b3\d{8}\b",
+        examples=["312345678", "309876543"],
+    ),
+
+    # 7. 駕駛執照號碼 (Driver's License Number)
+    "drivers_license_number": PIIEntitySpec(
+        canonical_id="drivers_license_number",
+        display_name_zh="駕駛執照號碼",
+        group=LabelGroup.GOV_TAX_ID,
+        gliner2_label="drivers_license_number",
+        prompt_description_en="Taiwan driver license numbers, identical to or paired with the national ID number",
+        prompt_description_zh="台灣駕駛執照號碼，通常與身分證統一編號相同或具備駕照登記號",
+        tw_pii_bench_label="tw_driver_license",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        examples=["A123456789", "高市字第123456號"],
+    ),
+
+    # 8. 電話號碼 (Phone Numbers: Mobile & Landline)
+    "phone_number": PIIEntitySpec(
+        canonical_id="phone_number",
+        display_name_zh="手機號碼與各區市話",
+        group=LabelGroup.CONTACT,
+        gliner2_label="phone_number",
+        prompt_description_en="Taiwan phone numbers including 09xx mobile phones, international +886 numbers, and regional landlines (02, 04, 07, etc.)",
+        prompt_description_zh="台灣市內電話與行動電話號碼，包含 09xx 手機、(02) 等各區碼市話與 +886 國碼格式",
+        tw_pii_bench_label="private_phone",
+        tw_pii_bench_fallback="private_phone",
+        is_extension=False,
+        regex_pattern=r"(?:\+?886[-\s]?)?0?9\d{2}[-\s]?\d{3}[-\s]?\d{3}|0[2-8][-\s]?\d{3,4}[-\s]?\d{4}",
+        examples=["0912-345-678", "(02) 2345-6789", "+886 988 123 456", "04-22019999"],
+    ),
+
+    # 9. 電子郵件 (Email Address)
+    "email": PIIEntitySpec(
+        canonical_id="email",
+        display_name_zh="個人與商業電子郵件",
+        group=LabelGroup.CONTACT,
+        gliner2_label="email",
+        prompt_description_en="Personal or private email addresses, including .tw, hinet.net, gmail, and company domains",
+        prompt_description_zh="私人或個人商務電子郵件地址，包含台灣常見之 hinet.net、.tw 網域或 gmail",
+        tw_pii_bench_label="private_email",
+        tw_pii_bench_fallback="private_email",
+        is_extension=False,
+        regex_pattern=r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        examples=["kevin.chen@gmail.com", "wang_mei@msa.hinet.net", "sales@company.com.tw"],
+    ),
+
+    # 10. 台灣通訊地址 (Taiwan Address)
+    "address": PIIEntitySpec(
+        canonical_id="address",
+        display_name_zh="台灣完整通訊地址",
+        group=LabelGroup.CONTACT,
+        gliner2_label="address",
+        prompt_description_en="Full residential or mailing street addresses in Taiwan, including city/county, district, road, lane, alley, number, and floor",
+        prompt_description_zh="台灣居住或通訊地址，包含縣市、鄉鎮市區、路街、巷弄號樓室",
+        tw_pii_bench_label="private_address",
+        tw_pii_bench_fallback="private_address",
+        is_extension=False,
+        examples=[
+            "台北市大安區忠孝東路四段216巷19弄5號3樓",
+            "新北市板橋區文化路二段182巷3弄8號",
+            "高雄市三民區建工路415號",
+            "花蓮縣吉安鄉中央路三段120巷2號",
+        ],
+    ),
+
+    # 11. 台灣郵遞區號 (Postal Code)
+    "postal_code": PIIEntitySpec(
+        canonical_id="postal_code",
+        display_name_zh="台灣郵遞區號 (3碼/3+2/3+3)",
+        group=LabelGroup.CONTACT,
+        gliner2_label="postal_code",
+        prompt_description_en="Taiwan postal codes, including 3-digit, 3+2 digit, or 3+3 digit formats",
+        prompt_description_zh="台灣 3 碼或 3+3 碼郵政編號",
+        tw_pii_bench_label="private_address",
+        tw_pii_bench_fallback="private_address",
+        is_extension=False,
+        regex_pattern=r"\b\d{3}(?:[-\s]?\d{2,3})?\b",
+        examples=["106", "10667", "807-123"],
+    ),
+
+    # 12. 出生日期與敏感日期 (Dates: DOB & ROC Calendar)
+    "date_of_birth": PIIEntitySpec(
+        canonical_id="date_of_birth",
+        display_name_zh="出生日期與民國紀年",
+        group=LabelGroup.PERSON,
+        gliner2_label="date_of_birth",
+        prompt_description_en="Dates of birth, expressed in either Gregorian calendar (YYYY-MM-DD) or Taiwan Republic of China (ROC/民國) calendar",
+        prompt_description_zh="個人出生年月日，包含西元紀年與台灣特有之民國紀年格式（民國xx年x月x日）",
+        tw_pii_bench_label="private_date",
+        tw_pii_bench_fallback="private_date",
+        is_extension=False,
+        examples=["民國78年5月20日", "民國102年11月3日", "1995-08-15", "68/04/12"],
+    ),
+
+    # 13. 銀行金融帳號 (Bank Account Number)
+    "bank_account": PIIEntitySpec(
+        canonical_id="bank_account",
+        display_name_zh="銀行存款帳戶號碼",
+        group=LabelGroup.BANKING,
+        gliner2_label="bank_account",
+        prompt_description_en="Taiwan bank deposit account numbers, typically 10 to 16 digits, associated with financial institutions or postal savings",
+        prompt_description_zh="台灣各商業銀行或中華郵政劃撥/存簿儲金帳號，通常為 10 至 16 碼數字",
+        tw_pii_bench_label="account_number",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        regex_pattern=r"\b\d{10,16}\b",
+        examples=["01234567890123", "700-0021234-5678901", "00400123456789"],
+    ),
+
+    # 14. 信用卡/支付卡號 (Payment Card)
+    "payment_card": PIIEntitySpec(
+        canonical_id="payment_card",
+        display_name_zh="信用卡卡號",
+        group=LabelGroup.BANKING,
+        gliner2_label="payment_card",
+        prompt_description_en="Credit card, debit card, or payment card numbers, typically 16 digits formatted in groups of four",
+        prompt_description_zh="信用卡或簽帳金融卡之16位卡號",
+        tw_pii_bench_label="account_number",
+        tw_pii_bench_fallback="account_number",
+        is_extension=False,
+        regex_pattern=r"\b(?:\d{4}[-\s]?){3}\d{4}\b",
+        examples=["4563-1234-5678-9012", "5432 0987 6543 2109"],
+    ),
+
+    # 15. 信用卡安全碼 (Card CVV)
+    "card_cvv": PIIEntitySpec(
+        canonical_id="card_cvv",
+        display_name_zh="信用卡背面末三碼/安全碼",
+        group=LabelGroup.BANKING,
+        gliner2_label="card_cvv",
+        prompt_description_en="Credit card security verification codes (CVV, CVC, CID), 3 or 4 digits",
+        prompt_description_zh="信用卡背面簽名欄末三碼或正面四碼驗證安全碼",
+        tw_pii_bench_label="secret",
+        tw_pii_bench_fallback="secret",
+        is_extension=False,
+        regex_pattern=r"\b\d{3,4}\b",
+        examples=["888", "123", "456"],
+    ),
+
+    # 16. LINE ID (Taiwan Social Messaging ID)
+    "tw_line_id": PIIEntitySpec(
+        canonical_id="tw_line_id",
+        display_name_zh="LINE 帳號 ID",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_line_id",
+        prompt_description_en="LINE messaging application user IDs commonly used in Taiwan for private contact and commerce",
+        prompt_description_zh="台灣廣泛使用之 LINE 即時通訊軟體帳號 ID",
+        tw_pii_bench_label="tw_line_id",
+        tw_pii_bench_fallback="private_url",
+        is_extension=True,
+        examples=["kevin998", "star_baby2023", "line_shop_01"],
+    ),
+
+    # 17. PTT 帳號 (Taiwan PTT BBS User ID)
+    "tw_ptt_id": PIIEntitySpec(
+        canonical_id="tw_ptt_id",
+        display_name_zh="PTT 批踢踢實業坊帳號",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_ptt_id",
+        prompt_description_en="User account names on Taiwan's largest bulletin board system (PTT BBS)",
+        prompt_description_zh="台灣最大 BBS 批踢踢實業坊（PTT）之使用者帳號",
+        tw_pii_bench_label="tw_ptt_id",
+        tw_pii_bench_fallback=None,
+        is_extension=True,
+        examples=["gossiping5566", "skywalk99", "maydayfan"],
+    ),
+
+    # 18. 戶號 / 房屋稅籍編號 (Taiwan Household Number)
+    "tw_household_no": PIIEntitySpec(
+        canonical_id="tw_household_no",
+        display_name_zh="戶口名簿戶號/房屋稅籍編號",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_household_no",
+        prompt_description_en="Taiwan household registration number from household certificates, typically 1 letter followed by 7 digits",
+        prompt_description_zh="戶口名簿或戶籍謄本戶號（通常為1碼英文+7碼數字）或房屋稅籍編號",
+        tw_pii_bench_label="tw_household_no",
+        tw_pii_bench_fallback="account_number",
+        is_extension=True,
+        regex_pattern=r"\b[A-Z]\d{7}\b",
+        examples=["A1234567", "B7654321"],
+    ),
+
+    # 19. 醫事人員證照字號 (Medical License Number)
+    "tw_medical_license": PIIEntitySpec(
+        canonical_id="tw_medical_license",
+        display_name_zh="醫師/護理師/藥師證照字號",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_medical_license",
+        prompt_description_en="Professional medical and nursing license registration numbers issued by Taiwan Ministry of Health and Welfare",
+        prompt_description_zh="衛生福利部核發之醫師、護理師、藥師證書或醫事執照字號",
+        tw_pii_bench_label="tw_medical_license",
+        tw_pii_bench_fallback="account_number",
+        is_extension=True,
+        examples=["醫字第012345號", "護理字第098765號", "藥字第034567號"],
+    ),
+
+    # 20. 軍人身分證號 (Military Identification Number)
+    "tw_military_id": PIIEntitySpec(
+        canonical_id="tw_military_id",
+        display_name_zh="國軍軍人身分證號",
+        group=LabelGroup.TAIWAN_EXTENSIONS,
+        gliner2_label="tw_military_id",
+        prompt_description_en="Taiwan military identification numbers issued to armed forces personnel",
+        prompt_description_zh="中華民國國防部核發之現役軍人身分證字號",
+        tw_pii_bench_label="tw_military_id",
+        tw_pii_bench_fallback="account_number",
+        is_extension=True,
+        examples=["陸字第123456號", "空字第654321號"],
+    ),
+
+    # 21. 密碼與金鑰 (Passwords, API Keys, Secrets)
+    "secret": PIIEntitySpec(
+        canonical_id="secret",
+        display_name_zh="密碼、驗證碼與 API Key",
+        group=LabelGroup.CREDENTIALS,
+        gliner2_label="secret",
+        prompt_description_en="Passwords, authentication secrets, API keys, JWT tokens, and one-time passwords (OTP)",
+        prompt_description_zh="密碼、登入憑證、簡訊一次性驗證碼 (OTP)、API 金鑰或 Token",
+        tw_pii_bench_label="secret",
+        tw_pii_bench_fallback="secret",
+        is_extension=False,
+        examples=["MyP@ssw0rd!2024", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "948201", "sk-proj-abc123xyz789"],
+    ),
+}
+
+
+class TaxonomyMapper:
+    """Provides query, mapping, and conversion utilities between schemas."""
+
+    @staticmethod
+    def get_spec(canonical_id: str) -> Optional[PIIEntitySpec]:
+        return CANONICAL_TAXONOMY.get(canonical_id)
+
+    @staticmethod
+    def all_specs() -> List[PIIEntitySpec]:
+        return list(CANONICAL_TAXONOMY.values())
+
+    @staticmethod
+    def get_gliner2_labels(include_extensions: bool = True) -> List[str]:
+        """Returns the list of labels used for GLiNER2 prompts."""
+        labels = []
+        for spec in CANONICAL_TAXONOMY.values():
+            if spec.is_extension and not include_extensions:
+                continue
+            labels.append(spec.gliner2_label)
+        return sorted(list(set(labels)))
+
+    @staticmethod
+    def map_tw_pii_bench_to_gliner2(bench_label: str) -> str:
+        """Maps a tw-PII-bench label back to its primary GLiNER2 label."""
+        for spec in CANONICAL_TAXONOMY.values():
+            if spec.tw_pii_bench_label == bench_label:
+                return spec.gliner2_label
+        return "account_number"
+
+    @staticmethod
+    def map_to_tw_pii_bench(gliner2_label: str) -> str:
+        """Maps a GLiNER2 label to its corresponding tw-PII-bench label."""
+        for spec in CANONICAL_TAXONOMY.values():
+            if spec.gliner2_label == gliner2_label:
+                return spec.tw_pii_bench_label
+        return "account_number"
+
+    @staticmethod
+    def to_schema_dict() -> Dict:
+        """Serializes the complete taxonomy into a standard dictionary schema."""
+        return {
+            "version": "1.0.0",
+            "locale": "zh-TW",
+            "base_model": "fastino/gliner2-privacy-filter-PII-multi",
+            "total_entities": len(CANONICAL_TAXONOMY),
+            "groups": [g.value for g in LabelGroup],
+            "entities": {
+                k: {
+                    "canonical_id": s.canonical_id,
+                    "display_name_zh": s.display_name_zh,
+                    "group": s.group.value,
+                    "gliner2_label": s.gliner2_label,
+                    "prompt_description_en": s.prompt_description_en,
+                    "prompt_description_zh": s.prompt_description_zh,
+                    "tw_pii_bench_label": s.tw_pii_bench_label,
+                    "tw_pii_bench_fallback": s.tw_pii_bench_fallback,
+                    "is_extension": s.is_extension,
+                    "regex_pattern": s.regex_pattern,
+                    "examples": s.examples,
+                }
+                for k, s in CANONICAL_TAXONOMY.items()
+            },
+        }

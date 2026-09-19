@@ -16,6 +16,9 @@
 
 <!-- the index — one line per closed ticket: enough to judge relevance, then zoom the link for the detail the ticket holds -->
 
+- [台灣 PII 實體與 GLiNER2 標籤映射體系設計](issues/02-taiwan-pii-label-taxonomy-mapping.md) — 確立 21 類台灣 PII 實體之混成映射架構（14 類對齊 GLiNER2 原生標籤 + 7 類在地擴充標籤如健保卡、車牌、LINE ID），產出 schema.json 與 taxonomy.py 映射庫。
+
+
 ## Not yet specified
 
 - **GPU 算力與微調超參數調優**：待微調腳本與首批 10,000 筆資料就緒後，根據硬體顯存（VRAM）確認 Batch Size、LoRA Rank (r)、Learning Rate 與訓練 Epochs。

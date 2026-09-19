@@ -19,3 +19,10 @@ A 205M parameter multilingual PII detection model supporting 42 entity labels ac
 
 ### Hard Negative
 Text that exhibits linguistic, structural, or lexical similarity to personal data (such as restaurant names containing personal names, landmark addresses, or public government emergency hotlines) but must NOT be labeled as PII, used to prevent false positives.
+
+### Canonical Taxonomy (標籤體系)
+The 21-entity unified schema defined in `src/pii_synthea/taxonomy.py` and `schema.json`. It bridges GLiNER2's 42 native multilingual labels with Taiwan's legal and cultural PII definitions, providing prompt descriptions in both English and Traditional Chinese.
+
+### Taiwan Extension Labels (台灣在地專屬標籤)
+The subset of entities not natively present in GLiNER2's 42 classes but vital in Taiwan workflows: `tw_nhi_card` (健保卡), `license_plate` (車牌), `tw_line_id` (LINE ID), `tw_ptt_id` (PTT 帳號), `tw_household_no` (戶號), `tw_medical_license` (醫事證照字號), and `tw_military_id` (軍人證號).
+

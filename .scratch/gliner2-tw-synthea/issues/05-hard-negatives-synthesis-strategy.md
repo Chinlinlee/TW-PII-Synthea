@@ -1,7 +1,7 @@
 # 台灣在地難辨負樣本（Hard Negatives）生成策略調研
 Type: research
 Status: open
-Blocked by: 02
+Blocked by: none
 
 ## Question
 
