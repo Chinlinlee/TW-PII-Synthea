@@ -113,6 +113,7 @@ class GLiNER2FineTuneRecipe:
         cfg = custom_config or self.config
         cfg_dict = cfg.to_gliner2_trainer_config()
         cfg_json_str = json.dumps(cfg_dict, ensure_ascii=False, indent=4)
+        cfg_json_py_literal = json.dumps(cfg_json_str)
 
         script = f'''#!/usr/bin/env python3
 """
@@ -125,6 +126,7 @@ Prerequisites:
 
 import os
 import sys
+import json
 import logging
 from pathlib import Path
 
@@ -181,7 +183,7 @@ def main():
     train_dataset = TrainingDataset.load(str(train_path))
     logger.info("Validating dataset integrity...")
     try:
-        train_dataset.validate(strict=False, raise_on_error=False)
+        train_dataset.validate(raise_on_error=False)
         train_dataset.print_stats()
     except Exception as e:
         logger.warning(f"Dataset validation note: {{e}}")
@@ -193,7 +195,7 @@ def main():
 
     # 4. Configure Training Parameters
     logger.info("Initializing TrainingConfig...")
-    config_dict = {cfg_json_str}
+    config_dict = json.loads({cfg_json_py_literal})
     
     # Instantiate TrainingConfig
     trainer_config = TrainingConfig(**config_dict)
