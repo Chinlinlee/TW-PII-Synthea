@@ -72,7 +72,7 @@ class GLiNER2Predictor(BasePredictor):
     def _load_model(self) -> None:
         try:
             from gliner2 import AutoExtractor
-            from gliner2.token_splitters import CharLevelSplitter
+            from gliner2.processor import CharLevelSplitter
         except ImportError as e:
             raise RuntimeError(
                 "gliner2 is required for GLiNER2 live inference. "
