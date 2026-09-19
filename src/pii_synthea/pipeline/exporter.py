@@ -117,10 +117,15 @@ class DatasetExporter:
 
     @staticmethod
     def _write_gliner2_jsonl(items: List[Dict[str, Any]], path: Path) -> None:
-        """Writes items in GLiNER2 standard JSONL format."""
+        """Writes items in GLiNER2 standard JSONL format (supports gliner2[train] and span evaluators)."""
         with open(path, "w", encoding="utf-8") as f:
             for it in items:
+                entities: Dict[str, List[str]] = {}
+                for s in it.get("spans", []):
+                    entities.setdefault(s["label"], []).append(s["text"])
                 gliner_entry = {
+                    "input": it["text"],
+                    "output": {"entities": entities},
                     "text": it["text"],
                     "spans": [
                         {

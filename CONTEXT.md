@@ -47,5 +47,12 @@ The XML extraction subsystem implemented in `src/pii_synthea/scenarios/tag_parse
 ### ScenarioSynthesizer (情境合成編排器)
 The unified pipeline controller implemented in `src/pii_synthea/scenarios/generator.py`. It connects `SeedTemplateLibrary`, `PromptBuilder`, `TagToSpanParser`, and `TemplateEngine` to generate single or batch synthetic datasets with distribution control, exporting directly to GLiNER2 JSONL or `tw-PII-bench` format.
 
+### CharLevelSplitter (中文分詞與邊界保全器)
+The character-level token splitting policy required by GLiNER2 when processing continuous Traditional Chinese text without inter-word whitespace. It ensures Chinese text is tokenized per-character (preventing multi-character phrases from collapsing into a single word token) while keeping Latin words, emails, and phone digits contiguous. Because `word_splitter` is a runtime-only attribute not saved in checkpoint `config.json`, it must be explicitly injected via `model.set_word_splitter(CharLevelSplitter())` during fine-tuning and inference.
+
+### GLiNER2FineTuneRecipe (GLiNER2 微調配方與腳本引擎)
+The end-to-end training management subsystem implemented in `src/pii_synthea/training/`. It defines standard training parameters (differential learning rates: `encoder_lr=1e-5`, `task_lr=5e-4`), LoRA target modules (`encoder`, `span_rep`, `classifier`, `count_embed`, `count_pred`), and generates standalone executable training scripts (`scripts/train_gliner2_tw.py`) alongside dual-compatible dataset formats (`{"input": ..., "output": {"entities": ...}}` + exact spans).
+
+
 
 

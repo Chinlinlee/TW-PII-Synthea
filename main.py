@@ -29,6 +29,11 @@ from pii_synthea.scenarios import (
 )
 from pii_synthea.pipeline import BatchPipelineOrchestrator, PipelineConfig
 from pii_synthea.taxonomy import LabelGroup, TaxonomyMapper
+from pii_synthea.training import (
+    GLiNER2DataFormatter,
+    GLiNER2FineTuneRecipe,
+    GLiNER2TrainingConfig,
+)
 
 
 def cmd_list_taxonomy(args):
@@ -275,6 +280,81 @@ def cmd_generate_dataset(args):
     print("=" * 80)
 
 
+def cmd_inspect_recipe(args):
+    """Inspects GLiNER2 Taiwan fine-tuning technical recipe and architecture specifications."""
+    recipe = GLiNER2FineTuneRecipe()
+    report = recipe.get_technical_spec_report()
+
+    print("\n==================== GLiNER2 Taiwan Fine-tuning Recipe & Architecture ====================")
+    tm = report["target_model"]
+    print(f"Target Checkpoint   : {tm['checkpoint']}")
+    print(f"Model Parameters    : {tm['parameters']} (Backbone: {tm['backbone']})")
+    print(f"Architecture Type   : {tm['architecture_type']} (Max candidate span width: {tm['max_width']})")
+    print(f"Counting Layer      : {tm['counting_layer']} (Joint entity occurrence regularization)")
+    print(f"Native Languages    : {', '.join(tm['pretraining_languages'])}")
+
+    print("\n---------------- Tokenization & Chinese Character Offset Mechanics ----------------")
+    tok = report["tokenization_and_chinese_offset_mechanics"]
+    print(f"Traditional ZH Gap  : {tok['traditional_chinese_gap']}")
+    print(f"Recommended Splitter: {tok['resolution_word_splitter']}")
+    print(f"Runtime Caveat      : {tok['runtime_persistence_warning']}")
+
+    print("\n---------------- Tokenizer Vocabulary Coverage Analysis ----------------")
+    voc = report["vocabulary_coverage_analysis"]
+    print(f"Tokenizer / Vocab   : {voc['tokenizer']} ({voc['vocab_size']:,} tokens, CC100)")
+    print(f"Coverage Evaluation : {voc['traditional_chinese_coverage']}")
+    print(f"Expansion Decision  : {voc['vocabulary_expansion_decision']}")
+
+    print("\n---------------- Optimization, LoRA & Loss Strategy ----------------")
+    ft = report["fine_tuning_strategy"]
+    opt = report["optimization_and_loss"]
+    print(f"Fine-tuning Mode    : {ft['recommended_mode']}")
+    print(f"LoRA Config         : Rank r={ft['lora_rank']}, Alpha={ft['lora_alpha']}, Dropout={ft['lora_dropout']}")
+    print(f"LoRA Target Modules : {', '.join(ft['lora_target_modules'])}")
+    print(f"Parameter Savings   : {ft['lora_trainable_parameters_ratio']} trainable parameters ({ft['adapter_size']})")
+    print(f"Learning Rates      : encoder_lr={opt['encoder_learning_rate']} (differential), task_lr={opt['task_learning_rate']}")
+    print(f"Batch Configuration : batch_size={opt['batch_configuration']['batch_size']}, accum={opt['batch_configuration']['gradient_accumulation_steps']} (effective={opt['batch_configuration']['effective_batch_size']})")
+    print(f"Loss Formulation    :")
+    for l_item in opt["loss_formulation"]:
+        print(f"  * {l_item}")
+    print("=" * 90)
+
+
+def cmd_export_train_script(args):
+    """Exports standalone, production-ready train_gliner2_tw.py script."""
+    cfg = GLiNER2TrainingConfig(
+        train_data_path=args.train_data or "data/gliner2_tw/train.jsonl",
+        val_data_path=args.val_data or "data/gliner2_tw/val.jsonl",
+        output_dir=args.output_dir or "./models/gliner2_tw_pii",
+        num_epochs=args.epochs,
+        batch_size=args.batch_size,
+        use_lora=not args.no_lora,
+    )
+    recipe = GLiNER2FineTuneRecipe(config=cfg)
+    out_path = recipe.export_training_script(args.output)
+    print(f"\nSuccessfully generated standalone fine-tuning script at: {out_path.resolve()}")
+    print(f"To execute training: python {out_path}")
+
+
+def cmd_validate_dataset(args):
+    """Validates a JSONL training dataset for GLiNER2 compatibility and exact span fidelity."""
+    recipe = GLiNER2FineTuneRecipe()
+    report = recipe.validate_dataset_file(args.file)
+    print(f"\n==================== GLiNER2 Dataset Validation Report ====================")
+    print(f"File Path           : {report['file']}")
+    print(f"Total Records       : {report['total_records']:,}")
+    print(f"Valid Records       : {report['valid_records']:,}")
+    print(f"Positive Records    : {report['positive_records']:,} ({report['total_entity_mentions']:,} mentions)")
+    print(f"Pure Negatives      : {report['pure_negatives']:,}")
+    print(f"Errors Found        : {report['errors_found']}")
+    if report["errors_found"] > 0:
+        print("\nErrors Sample:")
+        for err in report["error_samples"]:
+            print(f"  ! {err}")
+    print(f"\nGLiNER2 Status      : {'100% READY FOR TRAINING' if report['is_valid'] else 'VALIDATION FAILED'}")
+    print("=" * 75)
+
+
 def main():
     parser = argparse.ArgumentParser(description="PII-Synthea: Taiwan PII Synthetic Engine")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -360,6 +440,26 @@ def main():
     p_dataset.add_argument("--rate-limit", type=float, default=None, help="Max generation calls per second")
     p_dataset.add_argument("-s", "--seed", type=int, default=42, help="Random seed (default: 42)")
     p_dataset.set_defaults(func=cmd_generate_dataset)
+
+    # Command: inspect-recipe
+    p_recipe = subparsers.add_parser("inspect-recipe", help="Inspect GLiNER2 Taiwan fine-tuning specifications and architecture")
+    p_recipe.set_defaults(func=cmd_inspect_recipe)
+
+    # Command: export-train-script
+    p_export_script = subparsers.add_parser("export-train-script", help="Export standalone train_gliner2_tw.py script")
+    p_export_script.add_argument("-o", "--output", default="scripts/train_gliner2_tw.py", help="Output path (default: scripts/train_gliner2_tw.py)")
+    p_export_script.add_argument("--train-data", default="data/gliner2_tw/train.jsonl", help="Train dataset path")
+    p_export_script.add_argument("--val-data", default="data/gliner2_tw/val.jsonl", help="Val dataset path")
+    p_export_script.add_argument("--output-dir", default="./models/gliner2_tw_pii", help="Model checkpoints output dir")
+    p_export_script.add_argument("--epochs", type=int, default=10, help="Training epochs (default: 10)")
+    p_export_script.add_argument("--batch-size", type=int, default=8, help="Batch size per device (default: 8)")
+    p_export_script.add_argument("--no-lora", action="store_true", help="Disable LoRA (use full fine-tuning)")
+    p_export_script.set_defaults(func=cmd_export_train_script)
+
+    # Command: validate-dataset
+    p_val_data = subparsers.add_parser("validate-dataset", help="Validate a JSONL training dataset for GLiNER2 compatibility")
+    p_val_data.add_argument("-f", "--file", required=True, help="Path to JSONL dataset file")
+    p_val_data.set_defaults(func=cmd_validate_dataset)
 
     args = parser.parse_args()
     if not args.command:

@@ -14,8 +14,7 @@
 
 ## Decisions so far
 
-<!-- the index — one line per closed ticket: enough to judge relevance, then zoom the link for the detail the ticket holds -->
-
+- [GLiNER2 微調技術規格與資料格式調研](issues/01-gliner2-fine-tune-recipe-and-format.md) — 釐清目標模型 fastino/gliner2-privacy-filter-PII-multi 為 205M SpanExtractor 架構，查明預設 WhitespaceTokenSplitter 無法切分中文連續字元之缺陷，確立必須注入 CharLevelSplitter (word_splitter="char")，確認 mDeBERTa-v3 250k SPM 詞表對繁體中文覆蓋率達 100% 決策不擴充詞表，制定 LoRA (r=16, alpha=32) 與差別學習率 (1e-5 / 5e-4) 之微調配方，實作雙軌相容格式器、獨立訓練腳本 (scripts/train_gliner2_tw.py) 與 CLI 工具。
 - [台灣 PII 實體與 GLiNER2 標籤映射體系設計](issues/02-taiwan-pii-label-taxonomy-mapping.md) — 確立 21 類台灣 PII 實體之混成映射架構（14 類對齊 GLiNER2 原生標籤 + 7 類在地擴充標籤如健保卡、車牌、LINE ID），產出 schema.json 與 taxonomy.py 映射庫。
 - [演算法合法之台灣在地 PII 生成與雙向驗證器原型](issues/03-deterministic-taiwan-pii-generator-and-validator.md) — 實作 21 類台灣 PII 實體演算法生成與雙向校驗庫（身分證/居留證 Checksum、統編 mod 10 / mod 5、368 鄉鎮區地址與 3+3 郵遞區號、Luhn 信用卡、電話/健保卡/車牌等），並建置字元層級位移保全引擎（TemplateEngine, SpanReplacer）確保 assert text[start:end] == span.text 100% 正確。
 - [LLM 語境生成與 Tag-to-Span 解析管線設計](issues/04-llm-tag-based-context-and-scenario-generator.md) — 建立六大領域情境矩陣（醫療、金融、電信、網購、租屋、法律）、三級篇幅分佈（short 15-120 字、mid 200-1000 字、long 1500-5000 字）、XML 標籤字元級去標籤與位移保全抽取器（TagToSpanParser）、正規化校驗抽換、Prompt 工程器與 19 組高真實度離線種子庫，支援 GLiNER2 與 tw-PII-bench 雙格式匯出。

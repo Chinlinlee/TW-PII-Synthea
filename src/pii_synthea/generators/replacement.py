@@ -85,7 +85,12 @@ class SynthesisResult:
     def to_gliner2_format(self) -> Dict[str, Any]:
         """Converts to GLiNER2 training item format."""
         self.validate()
+        entities: Dict[str, List[str]] = {}
+        for s in sorted(self.spans, key=lambda x: x.start):
+            entities.setdefault(s.label, []).append(s.text)
         return {
+            "input": self.text,
+            "output": {"entities": entities},
             "text": self.text,
             "spans": [
                 {"start": s.start, "end": s.end, "label": s.label, "text": s.text}
